@@ -160,7 +160,7 @@ export function start(client) {
 
   async function loadPublicNews() {
     const { data, error } = await client.from('news_events')
-      .select('id,kind,title,description,event_date,event_time,created_at')
+      .select('id,kind,title,description,image_url,event_date,event_time,created_at')
       .eq('is_published', true)
       .or(`event_date.is.null,event_date.gte.${today()}`)
       .order('event_date', { ascending: true, nullsFirst: false })
@@ -176,6 +176,7 @@ export function start(client) {
       <article class="public-news-card">
         <span class="news-kind">${item.kind === 'event' ? 'Событие' : 'Новость'}</span>
         <p class="news-date">${escapeHTML(newsDateLabel(item))}</p>
+        ${item.image_url ? `<img class="news-image" src="${escapeHTML(item.image_url)}" alt="" loading="lazy">` : ''}
         <h3>${escapeHTML(item.title)}</h3>
         <p class="news-description">${escapeHTML(item.description)}</p>
       </article>`).join('');
@@ -230,12 +231,13 @@ export function start(client) {
     $('#navAdmin').hidden = !isAdmin;
     $('#adminStats').hidden = !isAdmin;
     $('#adminNews').hidden = !isAdmin;
+    $('#adminSettings').hidden = !isAdmin;
     $('#logKicker').textContent = isAdmin ? 'Панель хозяйки' : 'Личный кабинет';
     $('#logTitle').innerHTML = isAdmin ? 'Все <em>заявки.</em>' : 'Мои <em>записи.</em>';
     form.elements.full_name.value = profile.full_name || '';
     form.elements.phone.value = profile.phone || '';
     await loadBookings();
-    if (isAdmin) await loadAdminNews();
+    if (isAdmin) { await loadAdminNews(); await loadAdminSettings(); }
     if (dateField.value) await loadAvailability();
   }
 
@@ -339,7 +341,7 @@ export function start(client) {
         <button class="row-action row-action-danger" type="button" data-action="cancel" data-id="${escapeHTML(booking.id)}">Отменить</button>`;
       return `<article class="booking-row">
         <div class="booking-row-main"><strong>${dateText(booking.booking_date)} · ${timeText(booking.time_from)}–${timeText(booking.time_to)}</strong><span>${escapeHTML(guestName)} · ${escapeHTML(phone)}</span></div>
-        <div class="booking-row-details"><strong>${individual ? 'Индивидуальная' : 'Групповая'} · ${guestText(booking.guests)}</strong><span>${escapeHTML(tea)} · ${Number(booking.price).toLocaleString('ru-RU')} ₽</span></div>
+        <div class="booking-row-details"><strong>${individual ? 'Индивидуальная' : 'Групповая'} · ${guestText(booking.guests)}</strong><span>${escapeHTML(tea)} · ${Number(booking.price).toLocaleString('ru-RU')} ₽</span>${isAdmin && booking.comment ? `<span class="booking-comment">Пожелание: «${escapeHTML(booking.comment)}»</span>` : ''}</div>
         <span class="status status-${escapeHTML(booking.status)}">${labels[booking.status] || escapeHTML(booking.status)}</span>
         <div class="row-actions">${actions}</div>
       </article>`;
@@ -355,7 +357,7 @@ export function start(client) {
   async function loadAdminNews() {
     if (profile?.role !== 'admin') return;
     const { data, error } = await client.from('news_events')
-      .select('id,kind,title,description,event_date,event_time,is_published,created_at')
+      .select('id,kind,title,description,image_url,event_date,event_time,is_published,created_at')
       .order('created_at', { ascending: false });
     if (error) {
       toast(`Не удалось загрузить новости: ${error.message}`, true);
@@ -374,6 +376,7 @@ export function start(client) {
     list.innerHTML = items.map(item => `
       <article class="admin-news-item">
         <div class="admin-news-content">
+          ${item.image_url ? `<img class="news-image" src="${escapeHTML(item.image_url)}" alt="" loading="lazy">` : ''}
           <span class="news-kind">${item.kind === 'event' ? 'Событие' : 'Новость'} · ${item.is_published ? 'Опубликовано' : 'Черновик'}</span>
           <h4>${escapeHTML(item.title)}</h4>
           <p class="news-date">${escapeHTML(newsDateLabel(item))}</p>
@@ -391,6 +394,10 @@ export function start(client) {
     editingNewsId = null;
     $('#newsForm').reset();
     $('#newsForm').elements.id.value = '';
+    $('#newsImage').value = '';
+    const preview = $('#newsImagePreview');
+    preview.hidden = true;
+    preview.removeAttribute('src');
     $('#saveNewsButton').innerHTML = 'Опубликовать <span aria-hidden="true">↗</span>';
     $('#cancelNewsEdit').hidden = true;
   }
@@ -405,6 +412,15 @@ export function start(client) {
     eventForm.elements.event_time.value = item.event_time ? timeText(item.event_time) : '';
     eventForm.elements.description.value = item.description;
     eventForm.elements.is_published.checked = item.is_published;
+    const preview = $('#newsImagePreview');
+    if (item.image_url) {
+      preview.src = item.image_url;
+      preview.hidden = false;
+    } else {
+      preview.hidden = true;
+      preview.removeAttribute('src');
+    }
+    $('#newsImage').value = '';
     $('#saveNewsButton').textContent = 'Сохранить изменения';
     $('#cancelNewsEdit').hidden = false;
     eventForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -426,6 +442,14 @@ export function start(client) {
     const saveButton = $('#saveNewsButton');
     saveButton.disabled = true;
     try {
+      const file = $('#newsImage').files[0];
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) throw new Error('Фотография больше 5 МБ — выберите файл меньше.');
+        const path = `${Date.now()}-${String(file.name).replace(/[^\w.\-]+/g, '_')}`;
+        const { error: uploadError } = await client.storage.from('news-images').upload(path, file, { cacheControl: '3600', upsert: false });
+        if (uploadError) throw uploadError;
+        values.image_url = client.storage.from('news-images').getPublicUrl(path).data.publicUrl;
+      }
       const result = editingNewsId
         ? await client.from('news_events').update(values).eq('id', editingNewsId)
         : await client.from('news_events').insert({ ...values, created_by: session.user.id });
@@ -461,6 +485,64 @@ export function start(client) {
     } finally {
       button.disabled = false;
     }
+  }
+
+  async function loadAdminSettings() {
+    if (profile?.role !== 'admin') return;
+    const { data, error } = await client.from('settings')
+      .select('price_individual,price_group_per_guest').eq('id', 1).single();
+    if (!error && data) {
+      $('#settingsForm').elements.price_individual.value = data.price_individual;
+      $('#settingsForm').elements.price_group_per_guest.value = data.price_group_per_guest;
+    }
+    const teasResult = await client.from('teas')
+      .select('id,name,description,sort_order,is_active').order('sort_order');
+    if (teasResult.error) {
+      toast(`Не удалось загрузить чайную карту: ${teasResult.error.message}`, true);
+      return;
+    }
+    $('#adminTeasList').innerHTML = (teasResult.data || []).map(tea => `
+      <div class="admin-tea-row" data-tea-id="${escapeHTML(tea.id)}">
+        <label class="form-field"><span>Название</span><input data-tea-name value="${escapeHTML(tea.name)}" maxlength="120"></label>
+        <label class="form-field tea-desc-field"><span>Описание</span><textarea data-tea-description rows="2" maxlength="1000">${escapeHTML(tea.description)}</textarea></label>
+        <label class="tea-active-toggle"><input type="checkbox" data-tea-active ${tea.is_active ? 'checked' : ''}><span>В карте на сайте</span></label>
+        <button class="row-action" type="button" data-tea-save="${escapeHTML(tea.id)}">Сохранить</button>
+      </div>`).join('');
+  }
+
+  async function saveSettings(event) {
+    event.preventDefault();
+    if (profile?.role !== 'admin') return toast('Недостаточно прав для изменения цен.', true);
+    const data = new FormData(event.currentTarget);
+    const values = {
+      price_individual: Math.max(0, Number(data.get('price_individual')) || 0),
+      price_group_per_guest: Math.max(0, Number(data.get('price_group_per_guest')) || 0)
+    };
+    const button = event.currentTarget.querySelector('[type="submit"]');
+    button.disabled = true;
+    const { error } = await client.from('settings').update(values).eq('id', 1);
+    button.disabled = false;
+    if (error) return toast(`Не удалось сохранить цены: ${error.message}`, true);
+    toast('Цены обновлены — на сайте они изменятся сразу.');
+    await loadPublicData();
+  }
+
+  async function handleTeaSave(event) {
+    const button = event.target.closest('[data-tea-save]');
+    if (!button || profile?.role !== 'admin') return;
+    const row = button.closest('.admin-tea-row');
+    const values = {
+      name: row.querySelector('[data-tea-name]').value.trim(),
+      description: row.querySelector('[data-tea-description]').value.trim(),
+      is_active: row.querySelector('[data-tea-active]').checked
+    };
+    if (values.name.length < 2) return toast('Название чая слишком короткое.', true);
+    button.disabled = true;
+    const { error } = await client.from('teas').update(values).eq('id', button.dataset.teaSave);
+    button.disabled = false;
+    if (error) return toast(`Не удалось сохранить чай: ${error.message}`, true);
+    toast('Чайная карта обновлена.');
+    await loadPublicData();
   }
 
   function describeError(error) {
@@ -533,6 +615,19 @@ export function start(client) {
   });
 
   $('#newsForm').addEventListener('submit', saveNewsItem);
+  $('#newsImage').addEventListener('change', () => {
+    const file = $('#newsImage').files[0];
+    const preview = $('#newsImagePreview');
+    if (file && file.type.startsWith('image/')) {
+      preview.src = URL.createObjectURL(file);
+      preview.hidden = false;
+    } else {
+      preview.hidden = true;
+      preview.removeAttribute('src');
+    }
+  });
+  $('#settingsForm').addEventListener('submit', saveSettings);
+  $('#adminTeasList').addEventListener('click', handleTeaSave);
   $('#cancelNewsEdit').addEventListener('click', resetNewsForm);
   $('#adminNewsList').addEventListener('click', handleAdminNewsAction);
 
