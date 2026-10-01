@@ -399,6 +399,21 @@ h2 em { color: #8b9073; }
 .modal-overlay.open { display: grid; }
 .auth-modal { position: relative; width: min(440px, 100%); max-height: min(90vh, 760px); overflow-y: auto; padding: 35px; background: var(--paper-light); box-shadow: 0 24px 80px rgba(0, 0, 0, .24); }
 .auth-modal h2 { margin: 14px 0 18px; font-size: 31px; }
+.verification-overlay { z-index: 70; }
+.verification-modal { position: relative; width: min(510px, 100%); padding: clamp(27px, 6vw, 48px); background: var(--paper-light); box-shadow: 0 24px 80px rgba(0, 0, 0, .24); }
+.verification-mark { display: grid; width: 54px; height: 54px; margin-bottom: 23px; place-items: center; border: 1px solid #b9c8b5; border-radius: 50%; color: var(--forest); font: 25px var(--serif); }
+.verification-modal .section-kicker { margin-bottom: 10px; }
+.verification-modal h2 { margin: 0 0 14px; font-size: clamp(29px, 6vw, 38px); }
+.verification-copy, .verification-hint { color: #4e5d51; font-size: 14px; line-height: 1.8; }
+.verification-copy { margin-bottom: 8px; }
+.verification-copy strong { color: var(--forest); overflow-wrap: anywhere; }
+.verification-hint { margin-bottom: 23px; color: #657166; }
+.verification-actions { display: grid; gap: 10px; }
+.verification-actions .button { justify-content: center; width: 100%; }
+.verification-resend { min-height: 44px; border: 1px solid #cbd0c2; background: transparent; color: var(--forest); font-size: 13px; font-weight: 800; cursor: pointer; }
+.verification-resend:hover { background: #edf0e6; }
+.verification-resend:disabled, #checkVerification:disabled { cursor: wait; opacity: .6; }
+.verification-status { min-height: 22px; margin: 14px 0 0; color: #637064; font-size: 12px; line-height: 1.6; }
 .modal-close { position: absolute; top: 12px; right: 15px; width: 38px; height: 38px; border: 1px solid var(--line); background: transparent; color: var(--forest); font-size: 23px; cursor: pointer; }
 .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
 .auth-tabs button { padding: 10px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #637064; font-size: 13px; cursor: pointer; }
@@ -448,5 +463,7 @@ h2 em { color: #8b9073; }
   .log-empty { font-size: 13px; }
   .site-footer > p, .back-top, .copyright, .site-footer > a[href="privacy.html"] { font-size: 11px; }
   .auth-modal { padding: 28px 20px; }
+  .verification-copy, .verification-hint { font-size: 14px; }
+  .verification-status { font-size: 12px; }
   .policy-content { padding-top: 38px; }
 }

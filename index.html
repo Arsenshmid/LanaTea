@@ -51,7 +51,7 @@
         <div class="hero-facts" aria-label="О церемонии">
           <div><strong>7+</strong><span>историй в чайной карте</span></div>
           <div><strong>1,5–2</strong><span>часа для себя</span></div>
-          <div><strong>1–8</strong><span>гостей за встречу</span></div>
+          <div><strong>1–25</strong><span>гостей за встречу</span></div>
         </div>
       </div>
       <div class="hero-portrait" aria-label="Лана, хозяйка чайного дома">
@@ -146,7 +146,7 @@
     <section class="formats section-pad" id="formats">
       <div class="formats-heading"><div class="section-kicker"><span>03</span><span class="kicker-rule"></span><span>Встречаемся по-разному</span></div><h2>Найдите свой<br><em>ритм церемонии.</em></h2></div>
       <article class="format-card"><span class="format-number">01</span><div><h3>Индивидуальная</h3><p>Для вас одного или вдвоём. Выбираем чай и не торопимся.</p></div><div class="format-price"><strong id="priceIndividual">2 500 ₽</strong><span>за встречу</span></div></article>
-      <article class="format-card"><span class="format-number">02</span><div><h3>Групповая</h3><p>Одна компания от двух до восьми гостей бронирует стол целиком.</p></div><div class="format-price"><strong id="priceGroup">1 500 ₽</strong><span>за гостя</span></div></article>
+      <article class="format-card"><span class="format-number">02</span><div><h3>Групповая</h3><p>Одна компания от двух до двадцати пяти гостей бронирует стол целиком.</p></div><div class="format-price"><strong id="priceGroup">1 500 ₽</strong><span>за гостя</span></div></article>
     </section>
 
     <section class="booking-section section-pad" id="booking">
@@ -204,6 +204,21 @@
       <form id="loginForm" class="auth-form"><label class="form-field"><span>Email</span><input type="email" name="email" autocomplete="email" required></label><label class="form-field"><span>Пароль</span><input type="password" name="password" autocomplete="current-password" required></label><button class="button button-dark" type="submit">Войти <span aria-hidden="true">↗</span></button></form>
       <form id="registerForm" class="auth-form" hidden><label class="form-field"><span>Имя</span><input name="full_name" autocomplete="name" required minlength="2"></label><label class="form-field"><span>Телефон</span><input name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+7 900 000-00-00" required></label><label class="form-field"><span>Email</span><input type="email" name="email" autocomplete="email" required></label><label class="form-field"><span>Пароль</span><input type="password" name="password" autocomplete="new-password" minlength="8" required></label><label class="consent-field"><input type="checkbox" name="consent" required><span>Согласен(-на) на обработку данных по <a href="privacy.html" target="_blank" rel="noopener">политике конфиденциальности</a>.</span></label><button class="button button-dark" type="submit">Создать аккаунт <span aria-hidden="true">↗</span></button></form>
     </div>
+  </div>
+  <div class="modal-overlay verification-overlay" id="verificationModal" hidden>
+    <section class="verification-modal" role="dialog" aria-modal="true" aria-labelledby="verificationTitle" aria-describedby="verificationStatus">
+      <button class="modal-close" id="verificationClose" type="button" aria-label="Закрыть">×</button>
+      <span class="verification-mark" aria-hidden="true">@</span>
+      <p class="section-kicker"><span>ПОЧТИ ГОТОВО</span></p>
+      <h2 id="verificationTitle">Подтвердите почту</h2>
+      <p class="verification-copy">Мы отправили письмо со ссылкой на адрес <strong id="verificationEmail"></strong>.</p>
+      <p class="verification-hint">Перейдите по ссылке в письме. После подтверждения вернитесь на сайт, чтобы записаться на церемонию.</p>
+      <div class="verification-actions">
+        <button class="button button-dark" id="checkVerification" type="button">Проверить подтверждение</button>
+        <button class="verification-resend" id="resendVerification" type="button">Отправить письмо ещё раз</button>
+      </div>
+      <p class="verification-status" id="verificationStatus" aria-live="polite">Не нашли письмо? Проверьте папку «Спам».</p>
+    </section>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>

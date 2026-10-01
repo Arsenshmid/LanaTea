@@ -10,8 +10,17 @@
 
 ## Подготовка проекта
 
-1. Создайте проект Supabase в согласованном регионе и включите Email/Password в Authentication.
+1. Создайте проект Supabase в согласованном регионе. В **Authentication → Providers → Email** включите Email/Password и обязательно включите **Confirm email**.
 2. Один раз выполните весь `schema.sql` в **SQL Editor**. Скрипт создаёт профили, чайную карту, настройки, записи, триггеры и RLS-политики. Повторно целиком его не запускайте.
+   Если схема уже была выполнена, отдельно примените миграцию лимита гостей:
+
+```sql
+alter table public.bookings drop constraint if exists valid_guests;
+alter table public.bookings add constraint valid_guests check (
+  (format = 'individual' and guests between 1 and 2)
+  or (format = 'group' and guests between 2 and 25)
+);
+```
 3. В **Project Settings → API** скопируйте Project URL и публичный `anon`/publishable key в `supabase-config.js`:
 
 ```js
@@ -23,8 +32,9 @@ window.SUPABASE_CONFIG = {
 
 Не вставляйте сюда `service_role` key: файл загружается в браузер и будет публичным.
 
-4. В Authentication добавьте локальный адрес и GitHub Pages URL в разрешённые redirect URLs. Для локального теста запускайте сайт через `python -m http.server 8000` и открывайте `http://localhost:8000`.
-5. Зарегистрируйте Лану, затем один раз назначьте ей роль в SQL Editor:
+4. В **Authentication → URL Configuration** задайте **Site URL** `https://arsenshmid.github.io/LanaTea/` и добавьте в **Redirect URLs** `https://arsenshmid.github.io/LanaTea/**` и `http://localhost:8000/**`. Подтверждение из письма вернёт клиента на сайт. Для локального теста запускайте сайт через `python -m http.server 8000` и открывайте `http://localhost:8000`.
+5. Для реальной отправки писем настройте SMTP в **Project Settings → Auth → SMTP Settings**. Стандартная почтовая отправка Supabase ограничена и подходит только для тестов.
+6. Зарегистрируйте Лану, затем один раз назначьте ей роль в SQL Editor:
 
 ```sql
 update public.profiles

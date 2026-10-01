@@ -116,7 +116,7 @@ create table public.bookings (
   constraint valid_hours  check (time_from >= '10:00' and time_to <= '21:00'),
   constraint valid_guests check (
        (format = 'individual' and guests between 1 and 2)
-    or (format = 'group'      and guests between 2 and 8)
+    or (format = 'group'      and guests between 2 and 25)
   ),
   -- Главная защита от двойной записи: работает даже при одновременных заявках.
   -- Между церемониями остаётся 30 минут на подготовку стола.

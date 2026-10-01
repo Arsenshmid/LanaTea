@@ -20,6 +20,8 @@ export function start(client) {
   let busySlots = [];
   let toastTimer;
   let availabilityRequest = 0;
+  let pendingVerificationEmail = '';
+  let resendCooldownTimer;
 
   function toast(message, error = false) {
     toastElement.textContent = message;
@@ -77,6 +79,32 @@ export function start(client) {
     $('#authModal').hidden = true;
   }
 
+  function isEmailVerified(user) {
+    return Boolean(user?.email_confirmed_at || user?.confirmed_at);
+  }
+
+  function verificationRedirect() {
+    const redirect = new URL(window.location.href);
+    redirect.search = '';
+    redirect.hash = '';
+    return redirect.href;
+  }
+
+  function showVerification(email, message = 'Не нашли письмо? Проверьте папку «Спам».') {
+    pendingVerificationEmail = String(email || '').trim();
+    $('#verificationEmail').textContent = pendingVerificationEmail || 'указанный адрес';
+    $('#verificationStatus').textContent = message;
+    $('#verificationModal').hidden = false;
+    $('#verificationModal').classList.add('open');
+    $('#bookingGate').hidden = false;
+    $('#bookingGate').querySelector('p').textContent = 'Подтвердите адрес почты, чтобы открыть запись и личный кабинет.';
+  }
+
+  function closeVerification() {
+    $('#verificationModal').classList.remove('open');
+    $('#verificationModal').hidden = true;
+  }
+
   function setAuthMode(mode) {
     $('#loginForm').hidden = mode !== 'login';
     $('#registerForm').hidden = mode !== 'register';
@@ -95,7 +123,7 @@ export function start(client) {
   function buildGuestOptions() {
     const format = form.elements.format.value;
     const minimum = format === 'individual' ? 1 : 2;
-    const maximum = format === 'individual' ? 2 : 8;
+    const maximum = format === 'individual' ? 2 : 25;
     const previous = Number(guestField.value);
     guestField.innerHTML = Array.from({ length: maximum - minimum + 1 }, (_, index) => minimum + index)
       .map(count => `<option value="${count}">${guestText(count)}</option>`).join('');
@@ -124,7 +152,8 @@ export function start(client) {
   async function syncSession(nextSession) {
     session = nextSession;
     profile = null;
-    const isSignedIn = Boolean(session?.user);
+    const hasSession = Boolean(session?.user);
+    const isSignedIn = hasSession && isEmailVerified(session.user);
     $('#btnLogin').hidden = isSignedIn;
     $('#btnLogout').hidden = !isSignedIn;
     $('#userLabel').hidden = !isSignedIn;
@@ -135,12 +164,26 @@ export function start(client) {
     $('#navAdmin').hidden = true;
     $('#adminStats').hidden = true;
 
+    if (hasSession && !isSignedIn) {
+      const email = session.user.email || '';
+      $('#bookingGate').hidden = false;
+      $('#bookingGate').querySelector('p').textContent = 'Подтвердите адрес почты, чтобы открыть запись и личный кабинет.';
+      bookingList.innerHTML = '';
+      emptyMessage.hidden = false;
+      emptyMessage.textContent = 'Подтвердите email, чтобы увидеть записи.';
+      showVerification(email, 'Подтвердите адрес по ссылке в письме, прежде чем записываться.');
+      return;
+    }
+
     if (!isSignedIn) {
+      $('#bookingGate').querySelector('p').textContent = 'Войдите или зарегистрируйтесь, чтобы выбрать время и оставить заявку.';
       bookingList.innerHTML = '';
       emptyMessage.hidden = false;
       emptyMessage.textContent = 'Войдите, чтобы увидеть свои записи.';
       return;
     }
+
+    closeVerification();
 
     const { data, error } = await client.from('profiles')
       .select('full_name,phone,email,role').eq('id', session.user.id).single();
@@ -348,10 +391,18 @@ export function start(client) {
     event.preventDefault();
     const loginForm = event.currentTarget;
     const data = new FormData(loginForm);
+    const email = String(data.get('email')).trim();
     const { error } = await client.auth.signInWithPassword({
-      email: String(data.get('email')).trim(), password: String(data.get('password'))
+      email, password: String(data.get('password'))
     });
-    if (error) return toast(error.message, true);
+    if (error) {
+      if (error.code === 'email_not_confirmed') {
+        closeAuth();
+        showVerification(email, 'Сначала подтвердите email по ссылке в письме.');
+        return;
+      }
+      return toast(error.message, true);
+    }
     loginForm.reset();
     closeAuth();
     toast('Вы вошли в аккаунт.');
@@ -363,20 +414,86 @@ export function start(client) {
     const data = new FormData(registerForm);
     const phone = normalizePhone(data.get('phone'));
     if (!phone) return toast('Введите российский номер телефона из 10 или 11 цифр.', true);
+    const email = String(data.get('email')).trim();
     const { data: result, error } = await client.auth.signUp({
-      email: String(data.get('email')).trim(),
+      email,
       password: String(data.get('password')),
-      options: { data: {
-        full_name: String(data.get('full_name')).trim(),
-        phone,
-        privacy_policy_version: '2026-10-01'
-      } }
+      options: {
+        emailRedirectTo: verificationRedirect(),
+        data: {
+          full_name: String(data.get('full_name')).trim(),
+          phone,
+          privacy_policy_version: '2026-10-01'
+        }
+      }
     });
     if (error) return toast(error.message, true);
     registerForm.reset();
     closeAuth();
-    toast(result.session ? 'Аккаунт создан.' : 'Проверьте почту, чтобы подтвердить регистрацию.');
+    if (!isEmailVerified(result.user)) {
+      showVerification(email, 'Письмо со ссылкой отправлено. Подтвердите email, чтобы записаться на церемонию.');
+      return;
+    }
+    toast(result.session ? 'Email уже подтверждён, аккаунт создан.' : 'Аккаунт создан. Войдите, чтобы записаться.');
   });
+
+  async function resendVerification() {
+    const button = $('#resendVerification');
+    const status = $('#verificationStatus');
+    if (!pendingVerificationEmail) {
+      status.textContent = 'Не удалось определить email. Попробуйте зарегистрироваться ещё раз.';
+      return;
+    }
+    button.disabled = true;
+    button.textContent = 'Отправляем письмо…';
+    const { error } = await client.auth.resend({
+      type: 'signup',
+      email: pendingVerificationEmail,
+      options: { emailRedirectTo: verificationRedirect() }
+    });
+    if (error) {
+      status.textContent = `Не удалось отправить письмо: ${error.message}`;
+      button.disabled = false;
+      button.textContent = 'Отправить письмо ещё раз';
+      return;
+    }
+    status.textContent = `Новое письмо отправлено на ${pendingVerificationEmail}. Проверьте также папку «Спам».`;
+    let remaining = 60;
+    button.textContent = `Повторить через ${remaining} с`;
+    clearInterval(resendCooldownTimer);
+    resendCooldownTimer = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(resendCooldownTimer);
+        button.disabled = false;
+        button.textContent = 'Отправить письмо ещё раз';
+        return;
+      }
+      button.textContent = `Повторить через ${remaining} с`;
+    }, 1000);
+  }
+
+  async function checkVerification() {
+    const button = $('#checkVerification');
+    const status = $('#verificationStatus');
+    button.disabled = true;
+    try {
+      const { data, error } = await client.auth.getUser();
+      if (error || !isEmailVerified(data?.user)) {
+        status.textContent = 'Подтверждение пока не найдено. Откройте ссылку из письма и попробуйте снова.';
+        return;
+      }
+      const { data: sessionData, error: sessionError } = await client.auth.getSession();
+      if (sessionError) throw sessionError;
+      closeVerification();
+      await syncSession(sessionData?.session || null);
+      toast('Почта подтверждена. Добро пожаловать!');
+    } catch (error) {
+      status.textContent = `Не удалось проверить подтверждение: ${error.message}`;
+    } finally {
+      button.disabled = false;
+    }
+  }
 
   $('#btnLogin').addEventListener('click', () => showAuth('login'));
   $('#btnLogout').addEventListener('click', async () => {
@@ -384,8 +501,14 @@ export function start(client) {
     if (error) toast(error.message, true);
   });
   $('#authClose').addEventListener('click', closeAuth);
+  $('#verificationClose').addEventListener('click', closeVerification);
+  $('#resendVerification').addEventListener('click', resendVerification);
+  $('#checkVerification').addEventListener('click', checkVerification);
   $('#authModal').addEventListener('click', event => {
     if (event.target === $('#authModal')) closeAuth();
+  });
+  $('#verificationModal').addEventListener('click', event => {
+    if (event.target === $('#verificationModal')) closeVerification();
   });
   $$('[data-open-auth]').forEach(button => button.addEventListener('click', () => showAuth(button.dataset.openAuth)));
   $$('[data-auth-mode]').forEach(button => button.addEventListener('click', () => setAuthMode(button.dataset.authMode)));
