@@ -1,0 +1,425 @@
+export function start(client) {
+  const $ = (selector, parent = document) => parent.querySelector(selector);
+  const $$ = (selector, parent = document) => Array.from(parent.querySelectorAll(selector));
+  const form = $('#bookingForm');
+  const dateField = $('#bookingDate');
+  const startField = $('#timeFrom');
+  const durationField = $('#duration');
+  const guestField = $('#guestCount');
+  const teaField = $('select[name="tea_id"]');
+  const bookingList = $('#bookingList');
+  const emptyMessage = $('#logEmpty');
+  const toastElement = $('#toast');
+  const today = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  };
+  const prices = { individual: 2500, groupPerGuest: 1500 };
+  let session = null;
+  let profile = null;
+  let busySlots = [];
+  let toastTimer;
+  let availabilityRequest = 0;
+
+  function toast(message, error = false) {
+    toastElement.textContent = message;
+    toastElement.classList.toggle('error', error);
+    toastElement.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastElement.classList.remove('show'), 4500);
+  }
+
+  function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
+  }
+
+  function minutes(value) {
+    const [hour, minute] = String(value).split(':').map(Number);
+    return hour * 60 + minute;
+  }
+
+  function timeText(value) {
+    return String(value).slice(0, 5);
+  }
+
+  function dateText(value) {
+    const [year, month, day] = value.split('-');
+    return `${day}.${month}.${year}`;
+  }
+
+  function guestText(value) {
+    const count = Number(value);
+    const mod100 = count % 100;
+    const mod10 = count % 10;
+    const word = mod100 >= 11 && mod100 <= 14 ? 'гостей'
+      : mod10 === 1 ? 'гость'
+        : mod10 >= 2 && mod10 <= 4 ? 'гостя' : 'гостей';
+    return `${count} ${word}`;
+  }
+
+  function normalizePhone(value) {
+    let digits = String(value).replace(/\D/g, '');
+    if (digits.length === 10) digits = `7${digits}`;
+    if (digits.length === 11 && digits.startsWith('8')) digits = `7${digits.slice(1)}`;
+    return digits.length === 11 && digits.startsWith('7') ? `+${digits}` : null;
+  }
+
+  function showAuth(mode = 'login') {
+    $('#authModal').hidden = false;
+    $('#authModal').classList.add('open');
+    setAuthMode(mode);
+  }
+
+  function closeAuth() {
+    $('#authModal').classList.remove('open');
+    $('#authModal').hidden = true;
+  }
+
+  function setAuthMode(mode) {
+    $('#loginForm').hidden = mode !== 'login';
+    $('#registerForm').hidden = mode !== 'register';
+    $$('[data-auth-mode]').forEach(button => button.classList.toggle('active', button.dataset.authMode === mode));
+    $('#authTitle').textContent = mode === 'login' ? 'Добро пожаловать.' : 'Первая чашка — за знакомство.';
+  }
+
+  function updatePrices() {
+    const individual = $('#priceIndividual');
+    const group = $('#priceGroup');
+    if (individual) individual.textContent = `${prices.individual.toLocaleString('ru-RU')} ₽`;
+    if (group) group.textContent = `${prices.groupPerGuest.toLocaleString('ru-RU')} ₽`;
+    updateSummary();
+  }
+
+  function buildGuestOptions() {
+    const format = form.elements.format.value;
+    const minimum = format === 'individual' ? 1 : 2;
+    const maximum = format === 'individual' ? 2 : 8;
+    const previous = Number(guestField.value);
+    guestField.innerHTML = Array.from({ length: maximum - minimum + 1 }, (_, index) => minimum + index)
+      .map(count => `<option value="${count}">${guestText(count)}</option>`).join('');
+    guestField.value = previous >= minimum && previous <= maximum ? String(previous) : (format === 'group' ? '4' : '1');
+    updateSummary();
+  }
+
+  async function loadPublicData() {
+    const [settingsResult, teasResult] = await Promise.all([
+      client.from('settings').select('price_individual,price_group_per_guest').eq('id', 1).single(),
+      client.from('teas').select('id,name,is_active').eq('is_active', true).order('sort_order')
+    ]);
+    if (!settingsResult.error && settingsResult.data) {
+      prices.individual = settingsResult.data.price_individual;
+      prices.groupPerGuest = settingsResult.data.price_group_per_guest;
+      updatePrices();
+    }
+    if (teasResult.error) {
+      toast(`Не удалось загрузить чайную карту: ${teasResult.error.message}`, true);
+      return;
+    }
+    teaField.innerHTML = '<option value="">Пусть Лана выберет</option>' + teasResult.data
+      .map(tea => `<option value="${escapeHTML(tea.id)}">${escapeHTML(tea.name)}</option>`).join('');
+  }
+
+  async function syncSession(nextSession) {
+    session = nextSession;
+    profile = null;
+    const isSignedIn = Boolean(session?.user);
+    $('#btnLogin').hidden = isSignedIn;
+    $('#btnLogout').hidden = !isSignedIn;
+    $('#userLabel').hidden = !isSignedIn;
+    $('#bookingGate').hidden = isSignedIn;
+    form.hidden = !isSignedIn;
+    $('#my').hidden = !isSignedIn;
+    $('#navMy').hidden = !isSignedIn;
+    $('#navAdmin').hidden = true;
+    $('#adminStats').hidden = true;
+
+    if (!isSignedIn) {
+      bookingList.innerHTML = '';
+      emptyMessage.hidden = false;
+      emptyMessage.textContent = 'Войдите, чтобы увидеть свои записи.';
+      return;
+    }
+
+    const { data, error } = await client.from('profiles')
+      .select('full_name,phone,email,role').eq('id', session.user.id).single();
+    if (error) {
+      toast(`Не удалось загрузить профиль: ${error.message}`, true);
+      return;
+    }
+    profile = data;
+    const isAdmin = profile.role === 'admin';
+    const name = profile.full_name || session.user.email;
+    $('#userLabel').textContent = name;
+    $('#navAdmin').hidden = !isAdmin;
+    $('#adminStats').hidden = !isAdmin;
+    $('#logKicker').textContent = isAdmin ? 'Панель хозяйки' : 'Личный кабинет';
+    $('#logTitle').innerHTML = isAdmin ? 'Все <em>заявки.</em>' : 'Мои <em>записи.</em>';
+    form.elements.full_name.value = profile.full_name || '';
+    form.elements.phone.value = profile.phone || '';
+    await loadBookings();
+    if (dateField.value) await loadAvailability();
+  }
+
+  function updateSummary() {
+    if (!dateField.value || !startField.value) {
+      $('#bookingSummary').textContent = 'Выберите дату и свободное время.';
+      return;
+    }
+    const format = form.elements.format.value;
+    const guests = Number(guestField.value) || 1;
+    const start = minutes(startField.value);
+    const end = start + Number(durationField.value);
+    const endText = `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
+    const cost = format === 'individual' ? prices.individual : prices.groupPerGuest * guests;
+    const label = format === 'individual' ? 'Индивидуальная' : 'Групповая';
+    $('#bookingSummary').innerHTML = `${label} церемония · ${dateText(dateField.value)} · ${timeText(startField.value)}–${endText} · ${guestText(guests)} · <strong>${cost.toLocaleString('ru-RU')} ₽</strong>`;
+  }
+
+  function buildStartOptions() {
+    const duration = Number(durationField.value);
+    const previous = startField.value;
+    const buffer = 30;
+    const options = [];
+    for (let start = 10 * 60; start + duration <= 21 * 60; start += 30) {
+      const end = start + duration;
+      const occupied = busySlots.some(slot => {
+        const occupiedStart = minutes(slot.slot_from);
+        const occupiedEnd = minutes(slot.slot_to);
+        return start < occupiedEnd + buffer && occupiedStart < end + buffer;
+      });
+      const label = `${String(Math.floor(start / 60)).padStart(2, '0')}:${String(start % 60).padStart(2, '0')}`;
+      options.push(`<option value="${label}" ${occupied ? 'disabled' : ''}>${label}${occupied ? ' · занято' : ''}</option>`);
+    }
+    if (!options.length) {
+      startField.innerHTML = '<option value="">Нет свободного времени</option>';
+    } else {
+      startField.innerHTML = options.join('');
+      if (previous && Array.from(startField.options).some(option => option.value === previous && !option.disabled)) {
+        startField.value = previous;
+      } else {
+        const firstFree = Array.from(startField.options).find(option => !option.disabled);
+        startField.value = firstFree?.value || '';
+      }
+    }
+    updateSummary();
+  }
+
+  async function loadAvailability() {
+    const date = dateField.value;
+    const request = ++availabilityRequest;
+    if (!date) {
+      busySlots = [];
+      startField.innerHTML = '<option value="">Сначала выберите дату</option>';
+      updateSummary();
+      return;
+    }
+    startField.disabled = true;
+    startField.innerHTML = '<option value="">Проверяем время…</option>';
+    const { data, error } = await client.rpc('busy_slots', { day: date });
+    if (request !== availabilityRequest) return;
+    if (error) {
+      startField.innerHTML = '<option value="">Не удалось загрузить слоты</option>';
+      toast(`Не удалось проверить занятость: ${error.message}`, true);
+      startField.disabled = true;
+      return;
+    }
+    busySlots = data || [];
+    buildStartOptions();
+    startField.disabled = false;
+  }
+
+  async function loadBookings() {
+    if (!session?.user) return;
+    let query = client.from('bookings')
+      .select('id,booking_date,time_from,time_to,format,guests,comment,price,status,created_at,profiles(full_name,phone),teas(name)')
+      .order('booking_date', { ascending: true }).order('time_from', { ascending: true });
+    const filter = $('#bookingFilter').value;
+    if (filter === 'upcoming') query = query.gte('booking_date', today()).neq('status', 'cancelled');
+    if (filter === 'date' && $('#adminDate').value) query = query.eq('booking_date', $('#adminDate').value);
+    const { data, error } = await query;
+    if (error) {
+      toast(`Не удалось загрузить записи: ${error.message}`, true);
+      return;
+    }
+    renderBookings(data || []);
+  }
+
+  function renderBookings(bookings) {
+    const isAdmin = profile?.role === 'admin';
+    const labels = { pending: 'Ожидает ответа', confirmed: 'Подтверждена', cancelled: 'Отменена' };
+    emptyMessage.hidden = bookings.length > 0;
+    bookingList.innerHTML = bookings.map(booking => {
+      const guestName = booking.profiles?.full_name || '';
+      const phone = isAdmin
+        ? `${booking.profiles?.phone || ''} · ${booking.profiles?.email || ''}`
+        : booking.profiles?.phone || '';
+      const tea = booking.teas?.name || 'Пусть Лана выберет';
+      const individual = booking.format === 'individual';
+      const actions = booking.status === 'cancelled' ? '' : `
+        ${isAdmin && booking.status === 'pending' ? `<button class="row-action" type="button" data-action="confirm" data-id="${escapeHTML(booking.id)}">Подтвердить</button>` : ''}
+        <button class="row-action row-action-danger" type="button" data-action="cancel" data-id="${escapeHTML(booking.id)}">Отменить</button>`;
+      return `<article class="booking-row">
+        <div class="booking-row-main"><strong>${dateText(booking.booking_date)} · ${timeText(booking.time_from)}–${timeText(booking.time_to)}</strong><span>${escapeHTML(guestName)} · ${escapeHTML(phone)}</span></div>
+        <div class="booking-row-details"><strong>${individual ? 'Индивидуальная' : 'Групповая'} · ${guestText(booking.guests)}</strong><span>${escapeHTML(tea)} · ${Number(booking.price).toLocaleString('ru-RU')} ₽</span></div>
+        <span class="status status-${escapeHTML(booking.status)}">${labels[booking.status] || escapeHTML(booking.status)}</span>
+        <div class="row-actions">${actions}</div>
+      </article>`;
+    }).join('');
+
+    if (isAdmin) {
+      const current = today();
+      $('#statToday').textContent = bookings.filter(item => item.booking_date === current && item.status !== 'cancelled').length;
+      $('#statPending').textContent = bookings.filter(item => item.status === 'pending' && item.booking_date >= current).length;
+    }
+  }
+
+  function describeError(error) {
+    if (error.code === '23P01') return 'Это время только что заняли. Выберите другой свободный интервал.';
+    if (error.code === '23514') return 'Проверьте длительность, формат и число гостей.';
+    return error.message || 'Не удалось выполнить запрос.';
+  }
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!session?.user) return showAuth();
+    const data = new FormData(form);
+    const phone = normalizePhone(data.get('phone'));
+    if (!phone) return toast('Введите российский номер телефона из 10 или 11 цифр.', true);
+    if (!dateField.value || dateField.value < today()) return toast('Выберите сегодняшнюю или будущую дату.', true);
+    if (!startField.value || startField.selectedOptions[0]?.disabled) return toast('Выберите свободное время.', true);
+
+    const start = minutes(startField.value);
+    const end = start + Number(durationField.value);
+    const timeTo = `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
+    const button = form.querySelector('[type="submit"]');
+    button.disabled = true;
+    try {
+      const { error: profileError } = await client.from('profiles').update({
+        full_name: String(data.get('full_name')).trim(), phone
+      }).eq('id', session.user.id);
+      if (profileError) throw profileError;
+
+      const { error } = await client.from('bookings').insert({
+        user_id: session.user.id,
+        booking_date: dateField.value,
+        time_from: startField.value,
+        time_to: timeTo,
+        format: String(data.get('format')),
+        guests: Number(data.get('guests')),
+        tea_id: data.get('tea_id') || null,
+        comment: String(data.get('comment')).trim(),
+        status: 'pending'
+      });
+      if (error) throw error;
+
+      toast('Заявка отправлена. Лана свяжется с вами для подтверждения.');
+      form.elements.comment.value = '';
+      await loadBookings();
+      await loadAvailability();
+      $('#my').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (error) {
+      toast(describeError(error), true);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  bookingList.addEventListener('click', async event => {
+    const button = event.target.closest('[data-action]');
+    if (!button || !session?.user) return;
+    const action = button.dataset.action;
+    if (action === 'cancel' && !window.confirm('Отменить эту запись?')) return;
+    button.disabled = true;
+    const status = action === 'confirm' ? 'confirmed' : 'cancelled';
+    const { error } = await client.from('bookings').update({ status }).eq('id', button.dataset.id);
+    if (error) {
+      toast(describeError(error), true);
+      button.disabled = false;
+      return;
+    }
+    toast(status === 'confirmed' ? 'Запись подтверждена.' : 'Запись отменена.');
+    await loadBookings();
+    if (dateField.value) await loadAvailability();
+  });
+
+  $('#loginForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const loginForm = event.currentTarget;
+    const data = new FormData(loginForm);
+    const { error } = await client.auth.signInWithPassword({
+      email: String(data.get('email')).trim(), password: String(data.get('password'))
+    });
+    if (error) return toast(error.message, true);
+    loginForm.reset();
+    closeAuth();
+    toast('Вы вошли в аккаунт.');
+  });
+
+  $('#registerForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const registerForm = event.currentTarget;
+    const data = new FormData(registerForm);
+    const phone = normalizePhone(data.get('phone'));
+    if (!phone) return toast('Введите российский номер телефона из 10 или 11 цифр.', true);
+    const { data: result, error } = await client.auth.signUp({
+      email: String(data.get('email')).trim(),
+      password: String(data.get('password')),
+      options: { data: {
+        full_name: String(data.get('full_name')).trim(),
+        phone,
+        privacy_policy_version: '2026-10-01'
+      } }
+    });
+    if (error) return toast(error.message, true);
+    registerForm.reset();
+    closeAuth();
+    toast(result.session ? 'Аккаунт создан.' : 'Проверьте почту, чтобы подтвердить регистрацию.');
+  });
+
+  $('#btnLogin').addEventListener('click', () => showAuth('login'));
+  $('#btnLogout').addEventListener('click', async () => {
+    const { error } = await client.auth.signOut();
+    if (error) toast(error.message, true);
+  });
+  $('#authClose').addEventListener('click', closeAuth);
+  $('#authModal').addEventListener('click', event => {
+    if (event.target === $('#authModal')) closeAuth();
+  });
+  $$('[data-open-auth]').forEach(button => button.addEventListener('click', () => showAuth(button.dataset.openAuth)));
+  $$('[data-auth-mode]').forEach(button => button.addEventListener('click', () => setAuthMode(button.dataset.authMode)));
+  $$('.main-nav a').forEach(link => link.addEventListener('click', () => {
+    $('#menuToggle').setAttribute('aria-expanded', 'false');
+    $('#mainNav').classList.remove('is-open');
+  }));
+  $('#menuToggle').addEventListener('click', () => {
+    const toggle = $('#menuToggle');
+    const open = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!open));
+    $('#mainNav').classList.toggle('is-open', !open);
+  });
+
+  $$('input[name="format"]').forEach(input => input.addEventListener('change', buildGuestOptions));
+  [guestField, startField].forEach(field => field.addEventListener('change', updateSummary));
+  durationField.addEventListener('change', buildStartOptions);
+  dateField.addEventListener('change', loadAvailability);
+  $('#bookingFilter').addEventListener('change', event => {
+    $('#adminDate').hidden = event.target.value !== 'date';
+    loadBookings();
+  });
+  $('#adminDate').addEventListener('change', loadBookings);
+  dateField.min = today();
+  startField.innerHTML = '<option value="">Сначала выберите дату</option>';
+  buildGuestOptions();
+  updatePrices();
+
+  loadPublicData().catch(error => toast(error.message, true));
+  client.auth.getSession().then(({ data, error }) => {
+    if (error) toast(error.message, true);
+    syncSession(data?.session || null);
+  });
+  client.auth.onAuthStateChange((_event, nextSession) => {
+    setTimeout(() => syncSession(nextSession), 0);
+  });
+}
