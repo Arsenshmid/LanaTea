@@ -11,8 +11,8 @@
 ## Подготовка проекта
 
 1. Создайте проект Supabase в согласованном регионе. В **Authentication → Providers → Email** включите Email/Password и обязательно включите **Confirm email**.
-2. Один раз выполните весь `schema.sql` в **SQL Editor**. Скрипт создаёт профили, чайную карту, настройки, записи, триггеры и RLS-политики. Повторно целиком его не запускайте.
-   Если схема уже была выполнена, отдельно примените миграцию лимита гостей:
+2. Для новой базы один раз выполните весь `schema.sql` в **SQL Editor**. Он создаст профили, чайную карту, настройки, события, записи и RLS-политики. Повторно целиком его не запускайте.
+3. Если `schema.sql` уже запускали до добавления событий и лимита в 25 гостей, **не запускайте его снова**. Выполните `news-events.sql`, затем примените миграцию ограничения гостей:
 
 ```sql
 alter table public.bookings drop constraint if exists valid_guests;
@@ -21,7 +21,7 @@ alter table public.bookings add constraint valid_guests check (
   or (format = 'group' and guests between 2 and 25)
 );
 ```
-3. В **Project Settings → API** скопируйте Project URL и публичный `anon`/publishable key в `supabase-config.js`:
+4. В **Project Settings → API** скопируйте Project URL и публичный `anon`/publishable key в `supabase-config.js`:
 
 ```js
 window.SUPABASE_CONFIG = {
@@ -32,17 +32,17 @@ window.SUPABASE_CONFIG = {
 
 Не вставляйте сюда `service_role` key: файл загружается в браузер и будет публичным.
 
-4. В **Authentication → URL Configuration** задайте **Site URL** `https://arsenshmid.github.io/LanaTea/` и добавьте в **Redirect URLs** `https://arsenshmid.github.io/LanaTea/**` и `http://localhost:8000/**`. Подтверждение из письма вернёт клиента на сайт. Для локального теста запускайте сайт через `python -m http.server 8000` и открывайте `http://localhost:8000`.
-5. Для реальной отправки писем настройте SMTP в **Project Settings → Auth → SMTP Settings**. Стандартная почтовая отправка Supabase ограничена и подходит только для тестов.
-6. Зарегистрируйте Лану, затем один раз назначьте ей роль в SQL Editor:
+5. В **Authentication → URL Configuration** задайте **Site URL** `https://arsenshmid.github.io/LanaTea/` и добавьте в **Redirect URLs** `https://arsenshmid.github.io/LanaTea/**` и `http://localhost:8000/**`. Подтверждение из письма вернёт клиента на сайт. Для локального теста запускайте сайт через `python -m http.server 8000` и открывайте `http://localhost:8000`.
+6. Для реальной отправки писем настройте SMTP в **Project Settings → Auth → SMTP Settings**. Стандартная почтовая отправка Supabase ограничена и подходит только для тестов.
+7. Саргылана должна самостоятельно зарегистрироваться на сайте и подтвердить email. После этого выполните в SQL Editor запрос, чтобы назначить ей роль администратора:
 
 ```sql
 update public.profiles
 set role = 'admin'
-where email = 'EMAIL-ЛАНЫ';
+where lower(email) = lower('Odun1912@mail.ru');
 ```
 
-Админская роль не назначается через форму. Клиенты видят только свои записи; администратор видит все записи и может менять статус. Свободные интервалы возвращаются без имён и телефонов, а ограничение в базе защищает от одновременных броней.
+Админская роль не назначается через публичную форму. Проверьте, что запрос обновил одну строку. Клиенты видят только свои записи; администратор видит все записи и может менять статус и публикации новостей. Свободные интервалы возвращаются без имён и телефонов, а ограничение в базе защищает от одновременных броней.
 
 ## Перед публикацией
 

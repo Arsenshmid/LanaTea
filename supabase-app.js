@@ -22,6 +22,8 @@ export function start(client) {
   let availabilityRequest = 0;
   let pendingVerificationEmail = '';
   let resendCooldownTimer;
+  let editingNewsId = null;
+  let adminNewsItems = [];
 
   function toast(message, error = false) {
     toastElement.textContent = message;
@@ -149,6 +151,36 @@ export function start(client) {
       .map(tea => `<option value="${escapeHTML(tea.id)}">${escapeHTML(tea.name)}</option>`).join('');
   }
 
+  function newsDateLabel(item) {
+    const parts = [];
+    if (item.event_date) parts.push(dateText(item.event_date));
+    if (item.event_time) parts.push(timeText(item.event_time));
+    return parts.join(' · ') || 'Новости чайного дома';
+  }
+
+  async function loadPublicNews() {
+    const { data, error } = await client.from('news_events')
+      .select('id,kind,title,description,event_date,event_time,created_at')
+      .eq('is_published', true)
+      .or(`event_date.is.null,event_date.gte.${today()}`)
+      .order('event_date', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
+    if (error) {
+      toast(`Не удалось загрузить новости: ${error.message}`, true);
+      return;
+    }
+    const section = $('#newsSection');
+    const items = data || [];
+    section.hidden = items.length === 0;
+    $('#publicNews').innerHTML = items.map(item => `
+      <article class="public-news-card">
+        <span class="news-kind">${item.kind === 'event' ? 'Событие' : 'Новость'}</span>
+        <p class="news-date">${escapeHTML(newsDateLabel(item))}</p>
+        <h3>${escapeHTML(item.title)}</h3>
+        <p class="news-description">${escapeHTML(item.description)}</p>
+      </article>`).join('');
+  }
+
   async function syncSession(nextSession) {
     session = nextSession;
     profile = null;
@@ -197,11 +229,13 @@ export function start(client) {
     $('#userLabel').textContent = name;
     $('#navAdmin').hidden = !isAdmin;
     $('#adminStats').hidden = !isAdmin;
+    $('#adminNews').hidden = !isAdmin;
     $('#logKicker').textContent = isAdmin ? 'Панель хозяйки' : 'Личный кабинет';
     $('#logTitle').innerHTML = isAdmin ? 'Все <em>заявки.</em>' : 'Мои <em>записи.</em>';
     form.elements.full_name.value = profile.full_name || '';
     form.elements.phone.value = profile.phone || '';
     await loadBookings();
+    if (isAdmin) await loadAdminNews();
     if (dateField.value) await loadAvailability();
   }
 
@@ -318,6 +352,117 @@ export function start(client) {
     }
   }
 
+  async function loadAdminNews() {
+    if (profile?.role !== 'admin') return;
+    const { data, error } = await client.from('news_events')
+      .select('id,kind,title,description,event_date,event_time,is_published,created_at')
+      .order('created_at', { ascending: false });
+    if (error) {
+      toast(`Не удалось загрузить новости: ${error.message}`, true);
+      return;
+    }
+    renderAdminNews(data || []);
+  }
+
+  function renderAdminNews(items) {
+    adminNewsItems = items;
+    const list = $('#adminNewsList');
+    if (!items.length) {
+      list.innerHTML = '<p class="news-admin-empty">Публикаций пока нет.</p>';
+      return;
+    }
+    list.innerHTML = items.map(item => `
+      <article class="admin-news-item">
+        <div class="admin-news-content">
+          <span class="news-kind">${item.kind === 'event' ? 'Событие' : 'Новость'} · ${item.is_published ? 'Опубликовано' : 'Черновик'}</span>
+          <h4>${escapeHTML(item.title)}</h4>
+          <p class="news-date">${escapeHTML(newsDateLabel(item))}</p>
+          <p class="news-description">${escapeHTML(item.description)}</p>
+        </div>
+        <div class="admin-news-actions">
+          <button class="row-action" type="button" data-news-action="edit" data-id="${escapeHTML(item.id)}">Изменить</button>
+          <button class="row-action" type="button" data-news-action="toggle" data-id="${escapeHTML(item.id)}" data-published="${item.is_published}">${item.is_published ? 'Снять с публикации' : 'Опубликовать'}</button>
+          <button class="row-action row-action-danger" type="button" data-news-action="delete" data-id="${escapeHTML(item.id)}">Удалить</button>
+        </div>
+      </article>`).join('');
+  }
+
+  function resetNewsForm() {
+    editingNewsId = null;
+    $('#newsForm').reset();
+    $('#newsForm').elements.id.value = '';
+    $('#saveNewsButton').innerHTML = 'Опубликовать <span aria-hidden="true">↗</span>';
+    $('#cancelNewsEdit').hidden = true;
+  }
+
+  function editNewsItem(item) {
+    editingNewsId = item.id;
+    const eventForm = $('#newsForm');
+    eventForm.elements.id.value = item.id;
+    eventForm.elements.kind.value = item.kind;
+    eventForm.elements.title.value = item.title;
+    eventForm.elements.event_date.value = item.event_date || '';
+    eventForm.elements.event_time.value = item.event_time ? timeText(item.event_time) : '';
+    eventForm.elements.description.value = item.description;
+    eventForm.elements.is_published.checked = item.is_published;
+    $('#saveNewsButton').textContent = 'Сохранить изменения';
+    $('#cancelNewsEdit').hidden = false;
+    eventForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  async function saveNewsItem(event) {
+    event.preventDefault();
+    if (profile?.role !== 'admin') return toast('Недостаточно прав для публикации.', true);
+    const eventForm = event.currentTarget;
+    const data = new FormData(eventForm);
+    const values = {
+      kind: String(data.get('kind')),
+      title: String(data.get('title')).trim(),
+      description: String(data.get('description')).trim(),
+      event_date: String(data.get('event_date')) || null,
+      event_time: String(data.get('event_time')) || null,
+      is_published: data.get('is_published') === 'on'
+    };
+    const saveButton = $('#saveNewsButton');
+    saveButton.disabled = true;
+    try {
+      const result = editingNewsId
+        ? await client.from('news_events').update(values).eq('id', editingNewsId)
+        : await client.from('news_events').insert({ ...values, created_by: session.user.id });
+      if (result.error) throw result.error;
+      toast(editingNewsId ? 'Изменения сохранены.' : 'Публикация создана.');
+      resetNewsForm();
+      await Promise.all([loadAdminNews(), loadPublicNews()]);
+    } catch (error) {
+      toast(`Не удалось сохранить публикацию: ${error.message}`, true);
+    } finally {
+      saveButton.disabled = false;
+    }
+  }
+
+  async function handleAdminNewsAction(event) {
+    const button = event.target.closest('[data-news-action]');
+    if (!button || profile?.role !== 'admin') return;
+    const item = adminNewsItems.find(news => news.id === button.dataset.id);
+    if (!item) return;
+    const action = button.dataset.newsAction;
+    if (action === 'edit') return editNewsItem(item);
+    if (action === 'delete' && !window.confirm(`Удалить публикацию «${item.title}»?`)) return;
+    button.disabled = true;
+    try {
+      const result = action === 'toggle'
+        ? await client.from('news_events').update({ is_published: !item.is_published }).eq('id', item.id)
+        : await client.from('news_events').delete().eq('id', item.id);
+      if (result.error) throw result.error;
+      toast(action === 'toggle' ? (item.is_published ? 'Публикация снята с сайта.' : 'Публикация размещена на сайте.') : 'Публикация удалена.');
+      await Promise.all([loadAdminNews(), loadPublicNews()]);
+    } catch (error) {
+      toast(`Не удалось изменить публикацию: ${error.message}`, true);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   function describeError(error) {
     if (error.code === '23P01') return 'Это время только что заняли. Выберите другой свободный интервал.';
     if (error.code === '23514') return 'Проверьте длительность, формат и число гостей.';
@@ -386,6 +531,10 @@ export function start(client) {
     await loadBookings();
     if (dateField.value) await loadAvailability();
   });
+
+  $('#newsForm').addEventListener('submit', saveNewsItem);
+  $('#cancelNewsEdit').addEventListener('click', resetNewsForm);
+  $('#adminNewsList').addEventListener('click', handleAdminNewsAction);
 
   $('#loginForm').addEventListener('submit', async event => {
     event.preventDefault();
@@ -538,6 +687,7 @@ export function start(client) {
   updatePrices();
 
   loadPublicData().catch(error => toast(error.message, true));
+  loadPublicNews().catch(error => toast(error.message, true));
   client.auth.getSession().then(({ data, error }) => {
     if (error) toast(error.message, true);
     syncSession(data?.session || null);

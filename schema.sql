@@ -91,7 +91,25 @@ insert into public.teas (slug, name, sort_order) values
   ('yakut',       'Якутский чай с молоком и травами', 8);
 
 -- ---------------------------------------------------------------------
--- 4. Записи
+-- 4. Новости и события чайного дома
+-- ---------------------------------------------------------------------
+create table public.news_events (
+  id           uuid primary key default gen_random_uuid(),
+  kind         text not null default 'event' check (kind in ('news', 'event')),
+  title        text not null check (char_length(btrim(title)) between 3 and 140),
+  description  text not null default '',
+  event_date   date,
+  event_time   time,
+  is_published boolean not null default false,
+  created_by   uuid references public.profiles(id) on delete set null,
+  created_at   timestamptz not null default now()
+);
+
+create index news_events_public_date_idx on public.news_events (event_date)
+  where is_published;
+
+-- ---------------------------------------------------------------------
+-- 5. Записи
 --    Групповая = одна компания занимает стол целиком, поэтому
 --    любые две активные записи не могут пересекаться по времени.
 -- ---------------------------------------------------------------------
@@ -180,6 +198,7 @@ alter table public.profiles enable row level security;
 alter table public.settings enable row level security;
 alter table public.teas     enable row level security;
 alter table public.bookings enable row level security;
+alter table public.news_events enable row level security;
 
 -- Анонимным пользователям закрываем всё, кроме чтения чая и цен.
 revoke all on public.profiles, public.bookings from anon;
@@ -214,6 +233,16 @@ create policy teas_admin on public.teas
 grant select on public.teas to anon, authenticated;
 grant insert, update, delete on public.teas to authenticated;
 grant usage, select on sequence public.teas_id_seq to authenticated;
+
+-- Посетители видят опубликованные материалы; админ также видит черновики.
+create policy news_events_read on public.news_events
+  for select to anon, authenticated
+  using (public.is_admin() or (is_published and (event_date is null or event_date >= current_date)));
+create policy news_events_admin on public.news_events
+  for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+grant select on public.news_events to anon, authenticated;
+grant insert, update, delete on public.news_events to authenticated;
 
 -- bookings:
 --  * видишь только свои (админ видит все);
