@@ -1,0 +1,900 @@
+/* ══════════════════════════════════════════════════════════════════════
+   theme-tea.css — обновление дизайна «чайная церемония»
+   Подключается после styles.css и дополняет его, не переопределяя
+   поведение скриптов (классы .open, .show, .is-open, [hidden] и т. д.).
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --tea-clay: #bc5942;
+  --tea-clay-deep: #a2452f;
+  --tea-sand: #d9c69a;
+  --tea-celadon: #b9c9a9;
+  --tea-mist: #e7e9dc;
+  --tea-ink-soft: #4e5d51;
+  --tea-line: rgba(24, 60, 50, .12);
+  --tea-shadow-s: 0 2px 8px rgba(24, 60, 50, .06);
+  --tea-shadow-m: 0 14px 38px rgba(24, 60, 50, .09);
+  --tea-shadow-l: 0 26px 70px rgba(16, 44, 37, .16);
+  --tea-radius: 4px;
+  --tea-radius-l: 8px;
+}
+
+/* ── Общая атмосфера ─────────────────────────────────────────────────── */
+body {
+  background:
+    radial-gradient(1100px 520px at 88% -8%, rgba(217, 198, 154, .34), transparent 62%),
+    radial-gradient(900px 640px at -8% 42%, rgba(185, 201, 169, .28), transparent 60%),
+    var(--paper);
+  background-attachment: fixed, fixed, fixed;
+}
+
+::selection { background: rgba(217, 198, 154, .7); }
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(188, 89, 66, .5);
+  outline-offset: 3px;
+}
+
+.section-pad { position: relative; }
+
+.section-kicker { letter-spacing: .2em; }
+
+h2 { letter-spacing: -.01em; }
+
+/* ── Шапка ───────────────────────────────────────────────────────────── */
+.site-header {
+  background: rgba(250, 248, 241, .88);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--tea-line);
+}
+
+.main-nav a { position: relative; padding: 6px 0; white-space: nowrap; }
+
+.main-nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .25s ease;
+}
+
+.main-nav a:hover::after { transform: scaleX(1); }
+
+.header-booking {
+  border-radius: var(--tea-radius);
+  border-color: rgba(24, 60, 50, .22);
+  transition: background .2s, color .2s, box-shadow .2s, transform .2s;
+}
+
+.header-booking:hover { box-shadow: var(--tea-shadow-s); transform: translateY(-1px); }
+
+.auth-trigger { text-underline-offset: 3px; }
+
+/* ── Главный экран ───────────────────────────────────────────────────── */
+.hero {
+  background:
+    radial-gradient(760px 520px at 78% 22%, rgba(217, 198, 154, .17), transparent 66%),
+    radial-gradient(900px 700px at 6% 96%, rgba(16, 44, 37, .55), transparent 60%),
+    linear-gradient(155deg, #1d4538 0%, var(--forest) 46%, #123126 100%);
+}
+
+.hero::after {
+  border-color: rgba(228, 220, 186, .16);
+  box-shadow: inset 0 0 120px rgba(217, 198, 154, .07);
+}
+
+.hero .eyebrow { margin-bottom: 22px; }
+
+/* заголовок главной: держим «Время замедлится.» в одну строку */
+.hero h1 { font-size: clamp(36px, 4.2vw, 62px); line-height: 1.14; margin: 24px 0 22px; }
+
+.hero-description strong { color: #f1e9d5; font-weight: 600; }
+
+.hero-facts {
+  gap: clamp(20px, 3vw, 42px);
+  border-top-color: rgba(231, 227, 205, .22);
+}
+
+.hero-facts > div { position: relative; padding-left: 16px; }
+
+.hero-facts > div::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 1px;
+  height: 26px;
+  background: linear-gradient(180deg, rgba(217, 198, 154, .85), transparent);
+}
+
+.hero-facts strong { color: #e6d5b0; }
+
+.button,
+.button-light,
+.button-dark {
+  border-radius: var(--tea-radius);
+  box-shadow: var(--tea-shadow-s);
+}
+
+.button-light { background: linear-gradient(180deg, #f7f2e4, #ece4cf); }
+
+.text-link { border-bottom: 1px solid rgba(229, 222, 204, .35); padding-bottom: 3px; }
+
+/* «пар» над чашкой */
+.hero-portrait::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  right: 22%;
+  top: 6%;
+  width: 74px;
+  height: 190px;
+  background:
+    radial-gradient(closest-side, rgba(246, 242, 233, .5), transparent 72%) 12% 0/26px 120px no-repeat,
+    radial-gradient(closest-side, rgba(246, 242, 233, .38), transparent 72%) 52% 0/34px 170px no-repeat,
+    radial-gradient(closest-side, rgba(246, 242, 233, .3), transparent 72%) 88% 0/22px 140px no-repeat;
+  filter: blur(6px);
+  opacity: .7;
+  animation: tea-steam 9s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes tea-steam {
+  0%, 100% { transform: translateY(6px) scaleY(.96); opacity: .5; }
+  50% { transform: translateY(-10px) scaleY(1.06); opacity: .8; }
+}
+
+.portrait-caption {
+  border-radius: var(--tea-radius);
+  box-shadow: var(--tea-shadow-m);
+}
+
+/* ── Секции ──────────────────────────────────────────────────────────── */
+.ceremony { background: linear-gradient(180deg, var(--paper-light), #f7f4ea); }
+
+.news-section { background: linear-gradient(180deg, var(--tea-mist), #e3e6d8); }
+
+.tea-section { background: linear-gradient(180deg, #ebe9dd, #e6e5d6); }
+
+.formats { background: linear-gradient(180deg, var(--paper-light), #f6f3e9); }
+
+.ceremony-image { border-radius: var(--tea-radius); }
+
+.ceremony-image img { filter: saturate(1.02); }
+
+.ceremony-note {
+  border-radius: var(--tea-radius);
+  background: linear-gradient(140deg, #edecdf, #e2e3d3);
+  box-shadow: var(--tea-shadow-s);
+}
+
+.ritual-steps { border-top-color: var(--tea-line); }
+
+.ritual-steps > div {
+  padding: 4px 0 4px 0;
+  transition: transform .25s ease;
+}
+
+.ritual-steps > div:hover { transform: translateY(-3px); }
+
+/* Чайная карта */
+.tea-grid { border-color: rgba(24, 60, 50, .16); }
+
+.tea-card {
+  border-color: rgba(24, 60, 50, .16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .06));
+  transition: background .3s ease, transform .3s ease, box-shadow .3s ease;
+}
+
+.tea-card:hover {
+  background: rgba(250, 248, 241, .92);
+  transform: translateY(-3px);
+  box-shadow: var(--tea-shadow-m);
+}
+
+.tea-swatch { box-shadow: 0 0 0 4px rgba(255, 255, 255, .6), var(--tea-shadow-s); }
+
+.taste-note {
+  display: inline-block;
+  padding: 5px 10px;
+  border: 1px solid rgba(118, 94, 62, .24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .45);
+}
+
+.format-card {
+  border-top-color: var(--tea-line);
+  transition: background .25s ease, padding-left .25s ease;
+}
+
+.format-card:hover { background: rgba(255, 255, 255, .5); padding-left: 12px; }
+
+.format-card:last-child { border-bottom-color: var(--tea-line); }
+
+/* ── Частые вопросы ──────────────────────────────────────────────────── */
+.faq-section { background: var(--paper-light); }
+
+.faq-heading { max-width: 720px; margin-bottom: 34px; }
+
+.faq-heading h2 { margin: 18px 0 0; }
+
+.faq-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.faq-item {
+  border: 1px solid var(--tea-line);
+  border-radius: var(--tea-radius);
+  background: #fffefa;
+  box-shadow: var(--tea-shadow-s);
+  transition: box-shadow .25s ease, border-color .25s ease;
+}
+
+.faq-item:hover { box-shadow: var(--tea-shadow-m); border-color: rgba(24, 60, 50, .2); }
+
+.faq-item[open] { grid-column: 1 / -1; }
+
+.faq-item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  color: var(--forest);
+  cursor: pointer;
+  font: 400 18px/1.45 var(--serif);
+  list-style: none;
+}
+
+.faq-item summary::-webkit-details-marker { display: none; }
+
+.faq-item summary::after {
+  content: "+";
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(24, 60, 50, .22);
+  border-radius: 50%;
+  color: var(--tea-clay);
+  font: 400 16px/1 var(--sans);
+  transition: transform .25s ease, background .25s ease, color .25s ease;
+}
+
+.faq-item[open] summary::after {
+  content: "−";
+  background: var(--forest);
+  border-color: var(--forest);
+  color: #f6f2e9;
+}
+
+.faq-answer { padding: 0 20px 20px; }
+
+.faq-answer p {
+  margin: 0;
+  color: var(--tea-ink-soft);
+  font-size: 15px;
+  line-height: 1.85;
+}
+
+.faq-answer a { color: var(--forest); font-weight: 700; }
+
+/* ── Форма записи ────────────────────────────────────────────────────── */
+.booking-section { background: linear-gradient(180deg, var(--tea-mist), #e2e5d7); }
+
+.booking-form {
+  border-radius: var(--tea-radius-l);
+  border: 1px solid var(--tea-line);
+  box-shadow: var(--tea-shadow-l);
+}
+
+.form-topline { letter-spacing: .16em; }
+
+.form-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 18px 0 0;
+  padding: 0 0 18px;
+  list-style: none;
+  border-bottom: 1px solid var(--tea-line);
+  color: #6d7a70;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.form-steps li { display: flex; align-items: center; gap: 8px; }
+
+.form-steps span {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(24, 60, 50, .08);
+  color: var(--forest);
+  font-size: 10px;
+}
+
+.format-options { gap: 10px; }
+
+.format-option span {
+  flex-direction: column;
+  gap: 2px;
+  min-height: 58px;
+  border-radius: var(--tea-radius);
+  transition: color .2s, background .2s, border-color .2s, box-shadow .2s;
+}
+
+.format-option span strong { font-size: 14px; font-weight: 800; }
+
+.format-option span small { font-size: 11px; font-weight: 500; opacity: .78; }
+
+.format-option input:checked + span { box-shadow: var(--tea-shadow-m); }
+
+.form-field > span { letter-spacing: .04em; }
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  border-radius: var(--tea-radius);
+  background: #fffdf7;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+
+.form-field input:hover,
+.form-field select:hover,
+.form-field textarea:hover { border-color: rgba(24, 60, 50, .28); }
+
+.field-hint {
+  margin-top: 7px;
+  color: #6f7c72;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.field-error {
+  margin: 8px 0 0;
+  padding: 9px 12px;
+  border-left: 3px solid var(--tea-clay);
+  border-radius: 0 var(--tea-radius) var(--tea-radius) 0;
+  background: rgba(188, 89, 66, .09);
+  color: var(--tea-clay-deep);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Скрытые нативные контролы: остаются в форме и доступны с клавиатуры */
+.sr-only-control {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  opacity: 0;
+}
+
+#bookingDate,
+#timeFrom,
+#guestCount {
+  position: absolute;
+  width: 1px;
+  min-width: 0;
+  height: 1px;
+  min-height: 0;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Календарь ───────────────────────────────────────────────────────── */
+.calendar-field { position: relative; }
+
+.tea-calendar {
+  padding: 16px 16px 12px;
+  border: 1px solid var(--tea-line);
+  border-radius: var(--tea-radius-l);
+  background:
+    radial-gradient(320px 180px at 92% -10%, rgba(217, 198, 154, .3), transparent 70%),
+    #fffdf7;
+  box-shadow: var(--tea-shadow-s);
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cal-head strong {
+  color: var(--forest);
+  font: 400 19px/1.2 var(--serif);
+  letter-spacing: .01em;
+}
+
+.cal-nav {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(24, 60, 50, .18);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--forest);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .2s, color .2s, opacity .2s;
+}
+
+.cal-nav:hover:not(:disabled) { background: var(--forest); border-color: var(--forest); color: #f6f2e9; }
+
+.cal-nav:disabled { opacity: .32; cursor: not-allowed; }
+
+.cal-weekdays,
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-weekdays {
+  margin-bottom: 6px;
+  color: #7d8a80;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.cal-blank { height: 40px; }
+
+.cal-day {
+  position: relative;
+  justify-self: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .18s, color .18s, border-color .18s, transform .18s;
+}
+
+.cal-day:hover:not(:disabled) { background: rgba(24, 60, 50, .08); }
+
+.cal-day.is-today { border-color: rgba(188, 89, 66, .55); color: var(--tea-clay-deep); }
+
+.cal-day.is-selected {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: #f8f5eb;
+  box-shadow: var(--tea-shadow-s);
+  transform: scale(1.04);
+}
+
+.cal-day:disabled {
+  color: rgba(36, 54, 46, .26);
+  cursor: not-allowed;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.cal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--tea-line);
+}
+
+.cal-foot > span {
+  color: #6d7a70;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cal-foot > span.is-set { color: var(--forest); }
+
+.cal-today {
+  padding: 7px 14px;
+  border: 1px solid rgba(24, 60, 50, .2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--forest);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+
+.cal-today:hover { background: var(--forest); color: #f6f2e9; }
+
+/* ── Свободное время ─────────────────────────────────────────────────── */
+.slot-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.slot-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 74px;
+  padding: 10px 12px;
+  border: 1px solid rgba(24, 60, 50, .18);
+  border-radius: var(--tea-radius);
+  background: #fffdf7;
+  color: var(--forest);
+  cursor: pointer;
+  transition: background .2s, color .2s, border-color .2s, box-shadow .2s, transform .2s;
+}
+
+.slot-chip > span { font-size: 15px; font-weight: 800; letter-spacing: .02em; }
+
+.slot-chip > small { font-size: 10px; font-weight: 600; opacity: .8; }
+
+.slot-chip:hover:not(:disabled) { border-color: var(--forest); transform: translateY(-2px); box-shadow: var(--tea-shadow-s); }
+
+.slot-chip.is-active {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: #f8f5eb;
+  box-shadow: var(--tea-shadow-m);
+}
+
+.slot-chip.is-busy,
+.slot-chip:disabled {
+  border-style: dashed;
+  background: rgba(36, 54, 46, .04);
+  color: rgba(36, 54, 46, .42);
+  cursor: not-allowed;
+}
+
+.slot-empty {
+  display: block;
+  padding: 12px 14px;
+  border: 1px dashed rgba(24, 60, 50, .22);
+  border-radius: var(--tea-radius);
+  background: rgba(255, 255, 255, .5);
+  color: #6d7a70;
+  font-size: 13px;
+}
+
+/* ── Гости ───────────────────────────────────────────────────────────── */
+.guest-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  max-width: 240px;
+  min-height: 46px;
+  padding: 4px;
+  border: 1px solid rgba(24, 60, 50, .18);
+  border-radius: var(--tea-radius);
+  background: #fffdf7;
+}
+
+.guest-btn {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(24, 60, 50, .16);
+  border-radius: var(--tea-radius);
+  background: rgba(24, 60, 50, .05);
+  color: var(--forest);
+  font-size: 19px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s, color .2s, opacity .2s;
+}
+
+.guest-btn:hover:not(:disabled) { background: var(--forest); color: #f6f2e9; }
+
+.guest-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+.guest-value {
+  min-width: 44px;
+  color: var(--forest);
+  font: 400 22px/1 var(--serif);
+  text-align: center;
+}
+
+.guest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.guest-chips button {
+  min-width: 40px;
+  padding: 7px 11px;
+  border: 1px solid rgba(24, 60, 50, .16);
+  border-radius: 999px;
+  background: transparent;
+  color: #55665a;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .2s, color .2s, border-color .2s, opacity .2s;
+}
+
+.guest-chips button:hover:not(:disabled) { border-color: var(--forest); color: var(--forest); }
+
+.guest-chips button.is-active { background: var(--tea-clay); border-color: var(--tea-clay); color: #fff; }
+
+/* числа, которые доступны только в групповом формате */
+.guest-chips button.is-group { border-style: dashed; color: #8b968c; }
+
+.guest-chips button.is-group:hover { border-style: solid; border-color: var(--forest); color: var(--forest); }
+
+.guest-chips button:disabled { opacity: .34; cursor: not-allowed; }
+
+/* ── Сводка заявки ───────────────────────────────────────────────────── */
+.booking-summary { margin: 20px 0 14px; }
+
+.summary-empty {
+  margin: 0;
+  padding: 15px 17px;
+  border: 1px dashed rgba(24, 60, 50, .2);
+  border-radius: var(--tea-radius);
+  color: #66746a;
+  font-size: 13px;
+}
+
+.summary-card {
+  padding: 18px 20px;
+  border-radius: var(--tea-radius-l);
+  background:
+    radial-gradient(360px 200px at 100% 0%, rgba(217, 198, 154, .2), transparent 68%),
+    linear-gradient(160deg, #1d4538, var(--forest-deep));
+  color: #eee8d8;
+  box-shadow: var(--tea-shadow-m);
+}
+
+.summary-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid rgba(238, 232, 216, .16);
+}
+
+.summary-top > span {
+  color: #c9d4c6;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.summary-top strong { color: #f2e3c2; font: 400 26px/1 var(--serif); }
+
+.summary-rows {
+  display: grid;
+  gap: 9px;
+  margin: 14px 0 0;
+}
+
+.summary-rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.summary-rows dt { color: #a9bcac; font-size: 12px; }
+
+.summary-rows dd {
+  margin: 0;
+  color: #f2ede0;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.summary-hint {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid rgba(238, 232, 216, .16);
+  color: #b6c4b6;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.submit-button { margin-top: 6px; }
+
+/* ── Мобильная кнопка «Записаться» ───────────────────────────────────── */
+.sticky-cta {
+  position: fixed;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px calc(11px + env(safe-area-inset-bottom, 0px));
+  background: rgba(250, 248, 241, .94);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--tea-line);
+  box-shadow: 0 -10px 30px rgba(24, 60, 50, .12);
+  transform: translateY(115%);
+  transition: transform .28s ease;
+}
+
+.sticky-cta.is-visible { transform: translateY(0); }
+
+.sticky-cta-text { display: grid; gap: 2px; min-width: 0; }
+
+.sticky-cta-text strong {
+  overflow: hidden;
+  color: var(--forest);
+  font: 400 18px/1.2 var(--serif);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sticky-cta-text small {
+  overflow: hidden;
+  color: #6d7a70;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sticky-cta-button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: var(--tea-radius);
+  background: var(--forest);
+  color: #f6f2e9;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: var(--tea-shadow-s);
+}
+
+.sticky-cta-button:hover { background: var(--forest-deep); }
+
+/* ── Мелочи ──────────────────────────────────────────────────────────── */
+.public-news-card,
+.booking-row,
+.admin-news,
+.admin-settings,
+.booking-gate,
+.setup-notice {
+  border-radius: var(--tea-radius);
+}
+
+.public-news-card { transition: transform .25s ease, box-shadow .25s ease; }
+
+.public-news-card:hover { transform: translateY(-3px); box-shadow: var(--tea-shadow-m); }
+
+.booking-row { transition: border-color .2s ease, box-shadow .2s ease; }
+
+.booking-row:hover { border-color: rgba(24, 60, 50, .24); box-shadow: var(--tea-shadow-s); }
+
+.row-action { border-radius: var(--tea-radius); }
+
+.auth-modal,
+.verification-modal { border-radius: var(--tea-radius-l); }
+
+.toast { border-radius: var(--tea-radius); }
+
+.closing-note {
+  background:
+    radial-gradient(560px 220px at 12% 120%, rgba(185, 201, 169, .6), transparent 70%),
+    #dce1d4;
+}
+
+.closing-note > a { border-radius: var(--tea-radius); }
+
+.site-footer { border-top: 1px solid rgba(0, 0, 0, .12); }
+
+.site-footer > a:not(.brand) { transition: color .2s ease; }
+
+.site-footer > a:not(.brand):hover { color: #f2e3c2; }
+
+/* ── Адаптив ─────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .faq-list { grid-template-columns: 1fr; }
+  .form-steps { gap: 8px 14px; font-size: 10px; }
+  .cal-day { width: 38px; height: 38px; font-size: 13px; }
+  .cal-blank { height: 38px; }
+}
+
+@media (max-width: 680px) {
+  body { padding-bottom: 76px; }
+
+  .hero-facts > div { padding-left: 12px; }
+
+  .hero-portrait::after { right: 12%; width: 58px; height: 150px; }
+
+  .booking-form { padding: 18px 14px 22px; }
+
+  .tea-calendar { padding: 12px 10px 10px; }
+
+  .cal-head strong { font-size: 17px; }
+
+  .cal-nav { width: 34px; height: 34px; }
+
+  .cal-day { width: 36px; height: 36px; font-size: 13px; }
+  .cal-blank { height: 36px; }
+
+  .slot-chip { flex: 1 1 calc(33.333% - 8px); min-width: 0; padding: 9px 6px; }
+
+  .slot-chip > span { font-size: 14px; }
+
+  .summary-top strong { font-size: 22px; }
+
+  .summary-rows dd { font-size: 12px; }
+
+  .faq-item summary { padding: 15px 16px; font-size: 16px; }
+
+  .faq-answer { padding: 0 16px 17px; }
+
+  .faq-answer p { font-size: 14px; }
+
+  .toast { right: 12px; left: 12px; bottom: 88px; max-width: none; }
+}
+
+@media (min-width: 681px) {
+  .sticky-cta { display: none !important; }
+}
+
+@media (max-width: 560px) {
+  /* на узких экранах поля и форматы — в одну колонку, так удобнее заполнять */
+  .form-grid { grid-template-columns: 1fr; }
+  .form-field-wide { grid-column: auto; }
+  .format-options { grid-template-columns: 1fr; }
+  .summary-rows > div { align-items: flex-start; }
+  .summary-rows dd { max-width: 60%; }
+}
+
+@media (max-width: 370px) {
+  .guest-chips button { min-width: 34px; padding: 6px 8px; }
+  .slot-chip { flex: 1 1 calc(50% - 8px); }
+}

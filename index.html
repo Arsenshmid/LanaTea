@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Prata&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="theme-tea.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="app.js" defer></script>
@@ -26,6 +27,7 @@
     <nav class="main-nav" id="mainNav" aria-label="Основная навигация">
       <a href="#ceremony">Церемония</a>
       <a href="#tea">Чайная карта</a>
+      <a href="#faq">Вопросы</a>
       <a href="#booking">Запись</a>
       <a href="#my" id="navMy" hidden>Мои записи</a>
       <a href="#my" id="navAdmin" hidden>Админка</a>
@@ -42,8 +44,9 @@
     <section class="hero" id="home">
       <div class="hero-copy">
         <div class="hero-brand"><img src="logo.png" alt="Логотип чайного дома Саргылааны"><span><strong>Саргылаана Индеева</strong><small>ваш чайный мастер</small></span></div>
+        <p class="eyebrow"><span class="eyebrow-line"></span>Якутск · церемонии гунфу ча</p>
         <h1>Время замедлится.<br><em>Чай для ресурса и&nbsp;ясности</em></h1>
-        <p class="hero-description">Ритуал чая. Уютное пространство для замедления. Место, где китайская церемония «Гунфу ча» встречается с теплом якутского чаепития.</p>
+        <p class="hero-description"><strong>Ритуал чая. Уютное пространство для замедления.</strong> Место, где китайская церемония «Гунфу Ча» встречается с теплом якутского чаепития.</p>
         <div class="hero-actions">
           <a class="button button-light" href="#booking">Начать церемонию <span aria-hidden="true">↗</span></a>
           <a class="text-link" href="#tea">Открыть чайную карту <span aria-hidden="true">↓</span></a>
@@ -157,9 +160,46 @@
       <article class="format-card"><span class="format-number">02</span><div><h3>Групповая</h3><p>Одна компания до 25 гостей бронирует стол целиком.</p></div><div class="format-price"><strong id="priceGroup">1 500 ₽</strong><span>за гостя</span></div></article>
     </section>
 
+    <section class="faq-section section-pad" id="faq">
+      <div class="faq-heading">
+        <div class="section-kicker"><span>05</span><span class="kicker-rule"></span><span>Частые вопросы</span></div>
+        <h2>Всё, что стоит знать<br><em>перед встречей.</em></h2>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary>Как записаться на церемонию?</summary>
+          <div class="faq-answer"><p>Зарегистрируйтесь и подтвердите почту, выберите формат, день в календаре, свободное время и число гостей. Заявка уйдёт Саргылаане — она свяжется с вами и подтвердит встречу.</p></div>
+        </details>
+        <details class="faq-item">
+          <summary>Сколько длится церемония?</summary>
+          <div class="faq-answer"><p>1,5 или 2 часа — выбираете сами при записи. Принимаем ежедневно с 10:00 до 21:00, между встречами оставляем паузу 30 минут.</p></div>
+        </details>
+        <details class="faq-item">
+          <summary>Сколько гостей можно пригласить?</summary>
+          <div class="faq-answer"><p>От 1 до 25 человек. Индивидуальная церемония — это 1–2 гостя, групповая — от 2 до 25. Если гостей больше двух, запись автоматически станет групповой.</p></div>
+        </details>
+        <details class="faq-item">
+          <summary>Что если время уже занято?</summary>
+          <div class="faq-answer"><p>Занятые интервалы видны в списке времени и недоступны для выбора — календарь и свободные часы обновляются автоматически. Если подходящего времени нет, выберите другой день.</p></div>
+        </details>
+        <details class="faq-item">
+          <summary>Можно ли выбрать чай заранее?</summary>
+          <div class="faq-answer"><p>Да. В заявке можно выбрать сорт из чайной карты или доверить выбор Саргылаане — она подберёт чай под настроение встречи.</p></div>
+        </details>
+        <details class="faq-item">
+          <summary>Где проходит встреча?</summary>
+          <div class="faq-answer"><p>В Якутске. Точный адрес Саргылаана сообщит после подтверждения записи — в личном кабинете или в WhatsApp.</p></div>
+        </details>
+        <details class="faq-item">
+          <summary>Как отменить или изменить запись?</summary>
+          <div class="faq-answer"><p>В разделе «Мои записи» видны все заявки и их статус, там же запись можно отменить. Если нужно перенести время — напишите Саргылаане в <a href="https://wa.me/79647588855" target="_blank" rel="noopener noreferrer">WhatsApp</a> или позвоните.</p></div>
+        </details>
+      </div>
+    </section>
+
     <section class="booking-section section-pad" id="booking">
       <div class="booking-aside">
-        <div class="section-kicker"><span>05</span><span class="kicker-rule"></span><span>Ваш чайный вечер</span></div>
+        <div class="section-kicker"><span>06</span><span class="kicker-rule"></span><span>Ваш чайный вечер</span></div>
         <h2>Выберите дату.<br><em>Остальное — заварим.</em></h2>
         <p>Оставьте заявку, и Саргылаана подтвердит время. Можно прийти одному, вдвоём или всей компанией — до 25 гостей.</p>
         <div class="booking-aside-note"><span class="note-dot"></span><span>Ежедневно, с 10:00 до 21:00<br>Церемонии — 1,5 или 2 часа</span></div>
@@ -170,18 +210,68 @@
       </div>
       <form class="booking-form" id="bookingForm" hidden>
         <div class="form-topline"><span>ЗАПИСЬ НА ЦЕРЕМОНИЮ</span><span>~ 2 МИНУТЫ</span></div>
+        <ol class="form-steps" aria-hidden="true">
+          <li><span>1</span>Формат</li>
+          <li><span>2</span>Дата</li>
+          <li><span>3</span>Время</li>
+          <li><span>4</span>Гости</li>
+        </ol>
         <fieldset class="format-fieldset"><legend>Какой формат вам ближе?</legend><div class="format-options">
-          <label class="format-option"><input type="radio" name="format" value="individual" checked><span>Индивидуальная</span></label>
-          <label class="format-option"><input type="radio" name="format" value="group"><span>Групповая</span></label>
+          <label class="format-option"><input type="radio" name="format" value="individual" checked><span><strong>Индивидуальная</strong><small>1–2 гостя</small></span></label>
+          <label class="format-option"><input type="radio" name="format" value="group"><span><strong>Групповая</strong><small>2–25 гостей</small></span></label>
         </div></fieldset>
         <div class="form-grid">
           <label class="form-field"><span>Ваше имя</span><input name="full_name" autocomplete="name" placeholder="Как к вам обращаться" required minlength="2"></label>
-          <label class="form-field"><span>Телефон</span><input name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+7 900 000-00-00" required></label>
-          <label class="form-field"><span>Дата встречи <i>выбирается в календаре</i></span><input id="bookingDate" name="date" type="date" required></label>
-          <label class="form-field"><span>Гостей</span><select id="guestCount" name="guests" required><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select></label>
-          <label class="form-field"><span>Начало</span><select id="timeFrom" name="timeFrom" required></select></label>
-          <label class="form-field"><span>Длительность</span><select id="duration" name="duration" required><option value="90">1,5 часа</option><option value="120" selected>2 часа</option></select></label>
-          <label class="form-field form-field-wide"><span>Какой чай попробовать?</span><select id="teaChoice" name="tea_id"><option value="">Пусть Саргылаана выберет</option></select></label>
+          <label class="form-field"><span>Телефон</span><input name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+7 900 000-00-00" required><small class="field-hint">Для подтверждения заявки</small></label>
+
+          <div class="form-field form-field-wide calendar-field">
+            <span>Дата встречи <i>выберите день в календаре</i></span>
+            <div class="tea-calendar" id="teaCalendar">
+              <div class="cal-head">
+                <button class="cal-nav" id="calPrev" type="button" aria-label="Предыдущий месяц">‹</button>
+                <strong id="calTitle" aria-live="polite">—</strong>
+                <button class="cal-nav" id="calNext" type="button" aria-label="Следующий месяц">›</button>
+              </div>
+              <div class="cal-weekdays" aria-hidden="true"><span>пн</span><span>вт</span><span>ср</span><span>чт</span><span>пт</span><span>сб</span><span>вс</span></div>
+              <div class="cal-grid" id="calGrid"></div>
+              <div class="cal-foot">
+                <span id="calChosen">Дата не выбрана</span>
+                <button class="cal-today" id="calToday" type="button">Сегодня</button>
+              </div>
+            </div>
+            <input id="bookingDate" name="date" type="date" class="sr-only-control" aria-label="Дата встречи (календарь)">
+            <p class="field-error" id="dateError" hidden></p>
+          </div>
+
+          <div class="form-field form-field-wide">
+            <span>Начало церемонии <i>свободное время</i></span>
+            <div class="slot-chips" id="slotChips" role="group" aria-label="Свободное время начала"></div>
+            <select id="timeFrom" name="timeFrom" class="sr-only-control" aria-label="Время начала церемонии"></select>
+            <p class="field-hint" id="slotHint">Занятые интервалы отмечены и недоступны.</p>
+            <p class="field-error" id="timeError" hidden></p>
+          </div>
+
+          <div class="form-field">
+            <span>Гостей <i>до 25</i></span>
+            <div class="guest-stepper" id="guestStepper">
+              <button class="guest-btn" id="guestMinus" type="button" aria-label="Меньше гостей">−</button>
+              <span class="guest-value" id="guestValue" aria-live="polite">1</span>
+              <button class="guest-btn" id="guestPlus" type="button" aria-label="Больше гостей">+</button>
+            </div>
+            <div class="guest-chips" id="guestChips">
+              <button type="button" data-guests="1">1</button>
+              <button type="button" data-guests="2">2</button>
+              <button type="button" data-guests="4">4</button>
+              <button type="button" data-guests="6">6</button>
+              <button type="button" data-guests="10">10</button>
+              <button type="button" data-guests="25">25</button>
+            </div>
+            <select id="guestCount" name="guests" required class="sr-only-control" aria-label="Количество гостей"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>
+            <small class="field-hint" id="guestHint">Двое — уже компания</small>
+          </div>
+          <label class="form-field"><span>Длительность</span><select id="duration" name="duration" required><option value="90">1,5 часа</option><option value="120" selected>2 часа</option></select><small class="field-hint">Влияет на доступное время</small></label>
+
+          <label class="form-field form-field-wide"><span>Какой чай попробовать? <i>необязательно</i></span><select id="teaChoice" name="tea_id"><option value="">Пусть Саргылаана выберет</option></select></label>
           <label class="form-field form-field-wide"><span>Пожелание к встрече <i>необязательно</i></span><textarea name="comment" rows="3" placeholder="Любимый чай, аллергия или просто особое настроение…"></textarea></label>
         </div>
         <div class="booking-summary" id="bookingSummary" aria-live="polite"></div>
@@ -191,7 +281,7 @@
     </section>
 
     <section class="booking-log section-pad" id="my" hidden>
-      <div class="log-heading"><div><div class="section-kicker"><span>06</span><span class="kicker-rule"></span><span id="logKicker">Личный кабинет</span></div><h2 id="logTitle">Мои <em>записи.</em></h2></div><label class="filter-label" for="bookingFilter">Показать<select id="bookingFilter"><option value="upcoming">Предстоящие</option><option value="all">Все записи</option><option value="date">Конкретная дата</option></select></label></div>
+      <div class="log-heading"><div><div class="section-kicker"><span>07</span><span class="kicker-rule"></span><span id="logKicker">Личный кабинет</span></div><h2 id="logTitle">Мои <em>записи.</em></h2></div><label class="filter-label" for="bookingFilter">Показать<select id="bookingFilter"><option value="upcoming">Предстоящие</option><option value="all">Все записи</option><option value="date">Конкретная дата</option></select></label></div>
       <div class="admin-stats" id="adminStats" hidden><span><strong id="statToday">0</strong> сегодня</span><span><strong id="statPending">0</strong> ожидают ответа</span></div>
       <section class="admin-news" id="adminNews" hidden>
         <div class="admin-news-heading"><div><p class="section-kicker">АДМИН-ПАНЕЛЬ</p><h3>Новости и события</h3></div></div>
@@ -229,6 +319,11 @@
   </main>
 
   <footer class="site-footer"><a class="brand footer-brand" href="#home"><span>чайный дом<br><strong>Саргылааны</strong></span></a><p>Церемонии гунфу ча · Якутск · Саргылаана</p><a href="tel:+79647588855">Позвонить</a><a href="https://wa.me/79647588855" target="_blank" rel="noopener noreferrer">WhatsApp</a><a href="privacy.html">Политика данных</a><a href="#home" class="back-top">Наверх ↑</a><span class="copyright">© 2026</span></footer>
+
+  <div class="sticky-cta" id="stickyCta" hidden>
+    <span class="sticky-cta-text"><strong id="stickyPrice">Записаться на церемонию</strong><small id="stickyNote">свободные даты в календаре</small></span>
+    <a class="sticky-cta-button" href="#booking">Выбрать время <span aria-hidden="true">↗</span></a>
+  </div>
 
   <div class="modal-overlay" id="authModal" hidden>
     <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
