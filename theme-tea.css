@@ -628,43 +628,37 @@ h2 { letter-spacing: -.01em; }
 
 .guest-btn:disabled { opacity: .35; cursor: not-allowed; }
 
-.guest-value {
-  min-width: 44px;
+/* число гостей вписывается вручную */
+.guest-stepper .guest-input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--forest);
   font: 400 22px/1 var(--serif);
   text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+  box-shadow: none;
 }
 
-.guest-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 9px;
-}
-
-.guest-chips button {
-  min-width: 40px;
-  padding: 7px 11px;
-  border: 1px solid rgba(24, 60, 50, .16);
-  border-radius: 999px;
+.guest-stepper .guest-input:hover,
+.guest-stepper .guest-input:focus,
+.guest-stepper .guest-input:focus-visible {
+  border: 0;
+  outline: 0;
   background: transparent;
-  color: #55665a;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background .2s, color .2s, border-color .2s, opacity .2s;
+  box-shadow: none;
 }
 
-.guest-chips button:hover:not(:disabled) { border-color: var(--forest); color: var(--forest); }
+.guest-stepper .guest-input::-webkit-outer-spin-button,
+.guest-stepper .guest-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-.guest-chips button.is-active { background: var(--tea-clay); border-color: var(--tea-clay); color: #fff; }
-
-/* числа, которые доступны только в групповом формате */
-.guest-chips button.is-group { border-style: dashed; color: #8b968c; }
-
-.guest-chips button.is-group:hover { border-style: solid; border-color: var(--forest); color: var(--forest); }
-
-.guest-chips button:disabled { opacity: .34; cursor: not-allowed; }
+.guest-stepper:focus-within { border-color: #728a71; box-shadow: 0 0 0 2px rgba(114, 138, 113, .16); }
 
 /* ── Сводка заявки ───────────────────────────────────────────────────── */
 .booking-summary { margin: 20px 0 14px; }
@@ -895,6 +889,6 @@ h2 { letter-spacing: -.01em; }
 }
 
 @media (max-width: 370px) {
-  .guest-chips button { min-width: 34px; padding: 6px 8px; }
+  .guest-stepper { max-width: 100%; }
   .slot-chip { flex: 1 1 calc(50% - 8px); }
 }

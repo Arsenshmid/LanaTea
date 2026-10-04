@@ -259,23 +259,23 @@
   }
 
   /* ══════════════════════════════════════════════════════════════
-     Гости: шаг 1–25, формат подстраивается сам
+     Гости: число вписывается вручную, от 1 до 25
      ══════════════════════════════════════════════════════════════ */
   function setupGuests() {
     const form = bookingForm();
     const select = document.querySelector('#guestCount');
     if (!form || !select) return;
 
-    const output = document.querySelector('#guestValue');
+    const MAX_GUESTS = 25;
+    const field = document.querySelector('#guestInput');
     const hint = document.querySelector('#guestHint');
-    const chips = document.querySelector('#guestChips');
     const minus = document.querySelector('#guestMinus');
     const plus = document.querySelector('#guestPlus');
 
-    const bounds = () => {
-      const values = Array.from(select.options).map(option => Number(option.value)).filter(value => !Number.isNaN(value));
-      if (!values.length) return { min: 1, max: 25 };
-      return { min: Math.min(...values), max: Math.max(...values) };
+    const isGroup = () => (form.elements.format?.value || 'individual') === 'group';
+    const currentCount = () => {
+      const value = Number(select.value);
+      return Number.isFinite(value) && value >= 1 ? value : 1;
     };
 
     function setFormat(value) {
@@ -285,64 +285,54 @@
       radio.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
-    function keepFormatValid() {
-      const guests = Number(select.value) || 1;
-      const format = form.elements.format?.value || 'individual';
-      if (guests > 2 && format !== 'group') setFormat('group');
-      if (guests === 1 && format === 'group') setFormat('individual');
+    // число гостей задаёт формат: 3 и больше — групповая, 1 — индивидуальная
+    function syncFormat(count) {
+      if (count > 2 && !isGroup()) setFormat('group');
+      if (count === 1 && isGroup()) setFormat('individual');
     }
 
     function refresh() {
-      const { min, max } = bounds();
-      const current = Number(select.value) || min;
-      // если значение потерялось (например, список пересобрали) — возвращаем его в диапазон
-      if (!select.value || Number.isNaN(Number(select.value))) select.value = String(min);
-      if (output) output.textContent = String(current);
-      if (minus) minus.disabled = current <= min;
-      if (plus) plus.disabled = current >= max;
+      const count = currentCount();
+      if (field && document.activeElement !== field) field.value = String(count);
+      if (minus) minus.disabled = count <= 1;
+      if (plus) plus.disabled = count >= MAX_GUESTS;
       if (hint) {
-        hint.textContent = max <= 2
-          ? 'Индивидуально: 1–2 гостя. Для 3 и больше формат станет групповым'
-          : `Групповая: от 2 до ${max} гостей`;
+        hint.textContent = isGroup()
+          ? `Групповая: от 2 до ${MAX_GUESTS} гостей`
+          : 'Индивидуально: 1–2 гостя. Впишите 3 и больше — формат станет групповым';
       }
-      chips?.querySelectorAll('[data-guests]').forEach(button => {
-        const value = Number(button.dataset.guests);
-        // большие числа не блокируем: клик сам переключит формат на групповой
-        button.disabled = false;
-        button.classList.toggle('is-group', value > max);
-        button.classList.toggle('is-active', value >= min && value <= max && value === current);
-      });
     }
 
-    function setCount(value) {
-      const { min, max } = bounds();
-      const next = Math.min(Math.max(Number(value) || min, min), max);
-      if (String(next) === select.value) { refresh(); return; }
-      select.value = String(next);
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-      keepFormatValid();
+    // value — то, что вписал пользователь; rewrite — можно ли переписывать поле ввода
+    function applyCount(value, rewrite = true) {
+      const rounded = Math.round(Number(value));
+      const count = Number.isFinite(rounded) ? Math.min(Math.max(rounded, 1), MAX_GUESTS) : currentCount();
+      syncFormat(count);
+      if (select.value !== String(count)) {
+        select.value = String(count);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (rewrite && field) field.value = String(count);
       refresh();
       updateSummary();
     }
 
-    minus?.addEventListener('click', () => setCount(Number(select.value) - 1));
-    plus?.addEventListener('click', () => {
-      const { max } = bounds();
-      const next = Number(select.value) + 1;
-      // в индивидуальном формате потолок — 2 гостя: дальше автоматически групповая
-      if (next > max && max < 25) setFormat('group');
-      setCount(next);
+    field?.addEventListener('input', () => {
+      const raw = field.value.trim();
+      if (!/^\d+$/.test(raw)) return;              // пусто или не число — поправим при потере фокуса
+      const typed = Number(raw);
+      if (typed > MAX_GUESTS) { applyCount(MAX_GUESTS); return; }
+      if (typed < 1) return;
+      applyCount(typed, false);                    // не мешаем дописывать число
     });
-    chips?.addEventListener('click', event => {
-      const button = event.target.closest('[data-guests]');
-      if (!button) return;
-      const value = Number(button.dataset.guests);
-      if (value > bounds().max && value <= 25) setFormat('group');
-      setCount(value);
-    });
+    field?.addEventListener('change', () => applyCount(field.value));
+    field?.addEventListener('blur', () => applyCount(field.value));
 
-    select.addEventListener('change', () => { keepFormatValid(); refresh(); updateSummary(); });
-    new MutationObserver(() => { refresh(); keepFormatValid(); }).observe(select, { childList: true });
+    minus?.addEventListener('click', () => applyCount(currentCount() - 1));
+    plus?.addEventListener('click', () => applyCount(currentCount() + 1));
+
+    select.addEventListener('change', () => { syncFormat(currentCount()); refresh(); updateSummary(); });
+    new MutationObserver(() => { refresh(); syncFormat(currentCount()); }).observe(select, { childList: true });
 
     refresh();
   }
@@ -535,7 +525,6 @@
 
     form.querySelectorAll('input[name="format"]').forEach(radio => {
       radio.addEventListener('change', () => {
-        setupGuestHint();
         updateSummary();
       });
     });
@@ -555,40 +544,141 @@
   }
 
   /* ══════════════════════════════════════════════════════════════
-     Приветствие после подтверждения почты
+     Подтверждение почты: окно «вы успешно зарегистрированы»
+     показываем сразу, как только почта подтверждена
      ══════════════════════════════════════════════════════════════ */
   const verifiedModal = document.querySelector('#verifiedModal');
+  const verificationModal = document.querySelector('#verificationModal');
+  const verifiedTitle = document.querySelector('#verifiedTitle');
+  const verifiedCopy = document.querySelector('#verifiedCopy');
+  const verifiedHint = document.querySelector('#verifiedHint');
+  const verifiedLogin = document.querySelector('#verifiedLogin');
 
-  function openVerifiedModal() { if (verifiedModal) verifiedModal.hidden = false; }
-  function closeVerifiedModal() { if (verifiedModal) verifiedModal.hidden = true; }
+  let waitingForEmail = false;   // пользователь ждёт подтверждения почты
+  let modalMode = null;          // 'success' | 'fallback' — чтобы окно не мигало
+
+  const isVerifiedUser = user => Boolean(user?.email_confirmed_at || user?.confirmed_at);
+
+  // Оверлею нужен и атрибут hidden, и класс open — иначе он остаётся невидимым
+  function openVerifiedModal() {
+    if (!verifiedModal) return;
+    verifiedModal.hidden = false;
+    verifiedModal.classList.add('open');
+  }
+
+  function closeVerifiedModal() {
+    if (!verifiedModal) return;
+    verifiedModal.classList.remove('open');
+    verifiedModal.hidden = true;
+  }
+
+  function hideVerificationModal() {
+    if (!verificationModal) return;
+    verificationModal.classList.remove('open');
+    verificationModal.hidden = true;
+  }
+
+  function clearAuthParams() {
+    if (window.location.search || window.location.hash) {
+      history.replaceState(null, '', window.location.pathname);
+    }
+  }
+
+  // Почта подтверждена — «Вы успешно зарегистрированы!»
+  function showRegistered() {
+    if (modalMode === 'success') return;
+    modalMode = 'success';
+    waitingForEmail = false;
+    hideVerificationModal();
+    clearAuthParams();
+    if (verifiedTitle) verifiedTitle.textContent = 'Вы успешно зарегистрированы!';
+    if (verifiedCopy) verifiedCopy.textContent = 'Почта подтверждена. Можете вернуться на сайт — выбрать дату и записаться на церемонию.';
+    if (verifiedHint) {
+      verifiedHint.textContent = 'Это окно открылось из письма: вкладку с почтой можно закрыть.';
+      verifiedHint.hidden = false;
+    }
+    if (verifiedLogin) verifiedLogin.hidden = true;
+    openVerifiedModal();
+  }
+
+  // Ссылка обработана, но сессия не появилась — предложим войти
+  function showVerificationFallback() {
+    if (modalMode) return;
+    modalMode = 'fallback';
+    hideVerificationModal();
+    clearAuthParams();
+    if (verifiedTitle) verifiedTitle.textContent = 'Почта подтверждена';
+    if (verifiedCopy) verifiedCopy.textContent = 'Ссылка из письма обработана. Если вход не произошёл автоматически — войдите в аккаунт с тем же email.';
+    if (verifiedHint) verifiedHint.hidden = true;
+    if (verifiedLogin) verifiedLogin.hidden = false;
+    openVerifiedModal();
+  }
 
   document.querySelector('#verifiedClose')?.addEventListener('click', closeVerifiedModal);
   document.querySelector('#verifiedGo')?.addEventListener('click', () => {
     closeVerifiedModal();
     document.querySelector('#booking')?.scrollIntoView({ behavior: 'smooth' });
   });
+  verifiedLogin?.addEventListener('click', () => {
+    closeVerifiedModal();
+    const login = document.querySelector('#btnLogin');
+    if (login && !login.hidden) login.click();
+    else document.querySelector('[data-open-auth="login"]')?.click();
+  });
   verifiedModal?.addEventListener('click', event => { if (event.target === verifiedModal) closeVerifiedModal(); });
+
+  // Если человек вошёл вручную (не по ссылке из письма) — окно регистрации не показываем
+  document.querySelector('#loginForm')?.addEventListener('submit', () => {
+    waitingForEmail = false;
+    modalMode = null;
+  });
+
+  // Ждём подтверждения: как только появилась подтверждённая сессия — показываем окно
+  client.auth.onAuthStateChange((event, session) => {
+    if (!waitingForEmail) return;
+    if (session?.user && isVerifiedUser(session.user)) showRegistered();
+  });
+
+  // Если окно «подтвердите почту» открыто — значит пользователь ждёт письмо
+  if (verificationModal) {
+    new MutationObserver(() => {
+      if (!verificationModal.hidden) waitingForEmail = true;
+    }).observe(verificationModal, { attributes: true, attributeFilter: ['hidden'] });
+  }
 
   function watchEmailConfirmation() {
     const url = new URL(window.location.href);
-    // Supabase возвращает пользователя с сайта письма с ?code=... или #access_token=...
-    const cameFromEmail = url.searchParams.has('code') || url.hash.includes('access_token=');
-    if (!cameFromEmail) return;
+    // Supabase приводит пользователя с сайта письма: ?code=..., ?token_hash=... или #access_token=...
+    const cameFromEmail = url.searchParams.has('code')
+      || url.searchParams.has('token_hash')
+      || url.searchParams.has('error_description')
+      || url.hash.includes('access_token=');
 
-    let shown = false;
-    const check = async () => {
-      if (shown) return;
+    if (cameFromEmail) waitingForEmail = true;
+
+    // опрос: и на странице из письма, и в открытой вкладке сайта
+    let attempts = 0;
+    const maxAttempts = cameFromEmail ? 10 : 40;
+    const tick = async () => {
+      if (!waitingForEmail || modalMode === 'success') return;
+      attempts += 1;
       try {
         const { data } = await client.auth.getSession();
-        if (data?.session) {
-          shown = true;
-          openVerifiedModal();
-          // чистим адресную строку от служебных параметров
-          history.replaceState(null, '', window.location.pathname);
+        const user = data?.session?.user;
+        if (user && isVerifiedUser(user)) { showRegistered(); return; }
+        if (user) {
+          // в старом токене может не быть отметки о подтверждении — уточняем у сервера
+          const { data: fresh } = await client.auth.getUser();
+          if (isVerifiedUser(fresh?.user)) { showRegistered(); return; }
         }
       } catch (_) { /* тихо пробуем ещё раз */ }
+      if (attempts >= maxAttempts) {
+        if (cameFromEmail) showVerificationFallback();
+        return;
+      }
+      setTimeout(tick, cameFromEmail ? 900 : 1500);
     };
-    [800, 2000, 4000, 7000].forEach(delay => setTimeout(check, delay));
+    setTimeout(tick, cameFromEmail ? 400 : 1200);
   }
   watchEmailConfirmation();
 })();

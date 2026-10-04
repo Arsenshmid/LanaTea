@@ -252,22 +252,14 @@
           </div>
 
           <div class="form-field">
-            <span>Гостей <i>до 25</i></span>
+            <span>Гостей <i>впишите число от 1 до 25</i></span>
             <div class="guest-stepper" id="guestStepper">
               <button class="guest-btn" id="guestMinus" type="button" aria-label="Меньше гостей">−</button>
-              <span class="guest-value" id="guestValue" aria-live="polite">1</span>
+              <input class="guest-input" id="guestInput" type="number" min="1" max="25" step="1" inputmode="numeric" value="1" autocomplete="off" aria-label="Сколько гостей придёт" aria-describedby="guestHint">
               <button class="guest-btn" id="guestPlus" type="button" aria-label="Больше гостей">+</button>
             </div>
-            <div class="guest-chips" id="guestChips">
-              <button type="button" data-guests="1">1</button>
-              <button type="button" data-guests="2">2</button>
-              <button type="button" data-guests="4">4</button>
-              <button type="button" data-guests="6">6</button>
-              <button type="button" data-guests="10">10</button>
-              <button type="button" data-guests="25">25</button>
-            </div>
             <select id="guestCount" name="guests" required class="sr-only-control" aria-label="Количество гостей"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option></select>
-            <small class="field-hint" id="guestHint">Двое — уже компания</small>
+            <small class="field-hint" id="guestHint">Впишите число от 1 до 25</small>
           </div>
           <label class="form-field"><span>Длительность</span><select id="duration" name="duration" required><option value="90">1,5 часа</option><option value="120" selected>2 часа</option></select><small class="field-hint">Влияет на доступное время</small></label>
 
@@ -352,16 +344,18 @@
     </section>
   </div>
 
-  <!-- Приветствие после успешного подтверждения почты -->
+  <!-- Окно после подтверждения почты: показывается сразу, как только письмо подтверждено -->
   <div class="modal-overlay" id="verifiedModal" hidden>
-    <section class="verification-modal" role="dialog" aria-modal="true" aria-labelledby="verifiedTitle">
+    <section class="verification-modal" role="dialog" aria-modal="true" aria-labelledby="verifiedTitle" aria-describedby="verifiedCopy">
       <button class="modal-close" id="verifiedClose" type="button" aria-label="Закрыть">×</button>
       <span class="verification-mark" aria-hidden="true">✓</span>
       <p class="section-kicker"><span>ВСЕ ГОТОВО</span></p>
       <h2 id="verifiedTitle">Вы успешно зарегистрированы!</h2>
-      <p class="verification-copy">Можете вернуться на сайт и продолжить работу — выбрать дату и записаться на церемонию.</p>
+      <p class="verification-copy" id="verifiedCopy">Почта подтверждена. Можете вернуться на сайт — выбрать дату и записаться на церемонию.</p>
+      <p class="verification-hint" id="verifiedHint">Это окно открылось из письма: вкладку с почтой можно закрыть.</p>
       <div class="verification-actions">
-        <button class="button button-dark" id="verifiedGo" type="button">Продолжить работу на сайте <span aria-hidden="true">↗</span></button>
+        <button class="button button-dark" id="verifiedGo" type="button">Вернуться на сайт <span aria-hidden="true">↗</span></button>
+        <button class="verification-resend" id="verifiedLogin" type="button" hidden>Войти в аккаунт</button>
       </div>
     </section>
   </div>
