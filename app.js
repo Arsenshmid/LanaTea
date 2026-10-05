@@ -395,13 +395,13 @@
       ['Дата', humanDate(data.date)],
       ['Время', data.start ? `${data.start}–${data.end}` : 'ещё не выбрано'],
       ['Гостей', guestText(data.guests)],
-      ['Чай', data.tea || 'выберет Саргылаана']
+      ['Чай', data.tea || 'выберет Саргылана']
     ];
 
     const html = `<div class="summary-card">
       <div class="summary-top"><span>Ваша встреча</span><strong>${money(data.price)}</strong></div>
       <dl class="summary-rows">${rows.map(([label, value]) => `<div><dt>${escapeHTML(label)}</dt><dd>${escapeHTML(value)}</dd></div>`).join('')}</dl>
-      <p class="summary-hint">${escapeHTML(data.perGuest)}. Итоговую стоимость подтвердит Саргылаана при подтверждении записи.</p>
+      <p class="summary-hint">${escapeHTML(data.perGuest)}. Итоговую стоимость подтвердит Саргылана при подтверждении записи.</p>
     </div>`;
 
     if (html !== lastSummaryHTML || summary.innerHTML !== html) { summary.innerHTML = html; lastSummaryHTML = html; }
