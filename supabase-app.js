@@ -147,7 +147,7 @@ export function start(client) {
       toast(`Не удалось загрузить чайную карту: ${teasResult.error.message}`, true);
       return;
     }
-    teaField.innerHTML = '<option value="">Пусть Лана выберет</option>' + teasResult.data
+    teaField.innerHTML = '<option value="">Пусть Саргылана выберет</option>' + teasResult.data
       .map(tea => `<option value="${escapeHTML(tea.id)}">${escapeHTML(tea.name)}</option>`).join('');
   }
 
@@ -334,7 +334,7 @@ export function start(client) {
       const phone = isAdmin
         ? `${booking.profiles?.phone || ''} · ${booking.profiles?.email || ''}`
         : booking.profiles?.phone || '';
-      const tea = booking.teas?.name || 'Пусть Лана выберет';
+      const tea = booking.teas?.name || 'Пусть Саргылана выберет';
       const individual = booking.format === 'individual';
       const actions = booking.status === 'cancelled' ? '' : `
         ${isAdmin && booking.status === 'pending' ? `<button class="row-action" type="button" data-action="confirm" data-id="${escapeHTML(booking.id)}">Подтвердить</button>` : ''}
@@ -584,7 +584,7 @@ export function start(client) {
       });
       if (error) throw error;
 
-      toast('Заявка отправлена. Лана свяжется с вами для подтверждения.');
+      toast('Заявка отправлена. Саргылана свяжется с вами для подтверждения.');
       form.elements.comment.value = '';
       await loadBookings();
       await loadAvailability();

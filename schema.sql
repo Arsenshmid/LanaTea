@@ -1,5 +1,5 @@
 -- =====================================================================
--- Чайный дом Ланы: схема для Supabase (Postgres)
+-- Чайный дом Саргыланы: схема для Supabase (Postgres)
 -- Запускать целиком в Supabase -> SQL Editor -> New query -> Run
 -- =====================================================================
 
@@ -69,7 +69,7 @@ create table public.settings (
 insert into public.settings default values;
 
 -- ---------------------------------------------------------------------
--- 3. Чайная карта (Лана сможет менять сама через админку)
+-- 3. Чайная карта (Саргылана сможет менять сама через админку)
 -- ---------------------------------------------------------------------
 create table public.teas (
   id          serial primary key,
@@ -121,7 +121,7 @@ create table public.bookings (
   time_to      time not null,
   format       text not null check (format in ('individual', 'group')),
   guests       int  not null,
-  tea_id       int references public.teas(id),   -- null = «пусть Лана выберет»
+  tea_id       int references public.teas(id),   -- null = «пусть Саргылана выберет»
   comment      text not null default '',
   price        int  not null default 0,          -- считается триггером, фиксируется на момент записи
   status       text not null default 'pending'
@@ -268,7 +268,7 @@ grant select, insert on public.bookings to authenticated;
 grant  update (status) on public.bookings to authenticated;
 
 -- ---------------------------------------------------------------------
--- 6. Сделать Лану администратором (выполнить ПОСЛЕ её регистрации на сайте)
+-- 6. Сделать Саргылану администратором (выполнить ПОСЛЕ её регистрации на сайте)
 -- ---------------------------------------------------------------------
 -- update public.profiles set role = 'admin'
 -- where id = (select id from auth.users where email = 'lana@example.com');
